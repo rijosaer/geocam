@@ -1,56 +1,73 @@
-# Welcome to your Expo app 👋
+# GeoCam – Taller Semana 6
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Cámara que etiqueta cada foto con coordenadas GPS, mapa de fotos y borrado al agitar el teléfono.
+Expo SDK 57 · Expo Router · TypeScript estricto · probado con Expo Go en un teléfono físico.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Ejecutar
 
 ```bash
-npm run reset-project
+npm install
+npx expo start            # misma red Wi-Fi que el teléfono
+npx expo start --tunnel   # si el teléfono está en otra red
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Escanea el QR con Expo Go (actualizado a la versión que soporta el SDK 57).
 
-### Other setup steps
+## Estructura
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/app/(tabs)/_layout.tsx       Pestañas nativas + GeoPhotosProvider
+src/app/(tabs)/geocam.tsx        Cámara, banner de ubicación, importar de galería
+src/app/(tabs)/mapa.tsx          Marcadores, miniatura al tocar, lista "Sin ubicación"
+src/components/PermissionPrimer.tsx
+src/components/ShakeToClear.tsx  Alert de borrado al agitar
+src/hooks/useGeoLocation.ts      Permiso, lectura única y seguimiento de ubicación
+src/hooks/useCamera.ts           Permiso, cámara frontal/trasera y captura
+src/hooks/useShake.ts            Detección de agitado con el acelerómetro
+src/context/GeoPhotosContext.tsx addPhoto, removePhoto, clearAll
+src/types/geo.ts
+src/__tests__/                   Pruebas de los hooks y del contexto
+```
 
-## Learn more
+## Requisitos del taller
 
-To learn more about developing your project with Expo, look at the following resources:
+| Req. | Dónde |
+|---|---|
+| R1 Estado global de fotos | `src/context/GeoPhotosContext.tsx`, Provider en `src/app/(tabs)/_layout.tsx` |
+| R2 Importar desde galería | Botón 🖼 en GeoCam; borde verde = cámara, ámbar = galería |
+| R3 Pestaña Mapa | `src/app/(tabs)/mapa.tsx` |
+| R4 useShake | `src/hooks/useShake.ts` + `src/components/ShakeToClear.tsx` |
+| R5 AI-LOG | `AI-LOG.md` |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Verificación automática
 
-## Join the community
+```bash
+npx tsc --noEmit   # tipos
+npx expo lint      # lint (incluye reglas del React Compiler)
+npm test           # 35 pruebas de hooks y contexto
+```
 
-Join our community of developers creating universal apps.
+Las pruebas cubren: mapeo de los cinco estados de permiso, que al abrir solo se consulta el permiso,
+limpieza del GPS y del acelerómetro al desmontar y al salir de la pestaña, la suscripción huérfana
+(bandera `cancelled`), umbral y enfriamiento del agitado, guarda de doble toque de la cámara,
+errores expuestos como estado, re-consulta del permiso al volver de Ajustes y actualizaciones inmutables del contexto.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Estados de permiso
+
+En Expo Go los permisos pertenecen a Expo Go: para repetir una prueba, quítalos en
+*Ajustes → Apps → Expo Go → Permisos*.
+
+| Concedido | Rechazado | Bloqueado |
+|---|---|---|
+| _(captura)_ | _(captura)_ | _(captura)_ |
+
+## Pruebas en el teléfono
+
+- [ ] La app no pide permisos al abrirse; la cámara se pide con "Permitir acceso".
+- [ ] Negar la ubicación: la cámara sigue funcionando, aparece el banner y la foto se guarda en "Sin ubicación".
+- [ ] Negar la cámara dos veces en Android: aparece "Abrir Ajustes"; al activarla en Ajustes y volver, se abre la cámara.
+- [ ] Importar una foto de la galería: se ve con borde ámbar y etiqueta "Galería".
+- [ ] En Mapa: un marcador por foto con coordenadas; al tocarlo se ve la miniatura.
+- [ ] Sin permiso de ubicación, el mapa se centra en la última foto.
+- [ ] Agitar el teléfono: aparece el Alert y "Borrar todo" vacía las fotos.
+- [ ] Log temporal en los cleanups: al cambiar de pestaña se detienen el GPS y el acelerómetro.

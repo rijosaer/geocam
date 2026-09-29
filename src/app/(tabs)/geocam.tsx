@@ -60,6 +60,8 @@ export default function GeoCamScreen() {
   };
 
   const handleCapture = async () => {
+    // Pedir en contexto: la primera foto es el momento de pedir la ubicación
+    if (geo.permission === 'undetermined') await geo.requestPermission();
     const photo = await takePhoto();
     if (photo) await savePhoto(photo.uri, 'camera');
   };
@@ -101,7 +103,7 @@ export default function GeoCamScreen() {
           <Text style={styles.bannerText}>
             {geo.permission === 'blocked'
               ? 'Ubicación desactivada: toca para abrir Ajustes. Tus fotos se guardan sin coordenadas.'
-              : 'Activa la ubicación para etiquetar tus fotos'}
+              : 'Toca aquí para permitir la ubicación y etiquetar tus fotos'}
           </Text>
         </Pressable>
       )}

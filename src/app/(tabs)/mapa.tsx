@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, Pressable, FlatList, StyleSheet } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useIsFocused } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useGeoLocation } from '@/hooks/useGeoLocation';
 import { useGeoPhotos } from '@/context/GeoPhotosContext';
 import { ShakeToClear } from '@/components/ShakeToClear';
@@ -20,7 +19,6 @@ const DEFAULT_REGION = {
 
 export default function MapaScreen() {
   const isFocused = useIsFocused();
-  const { top } = useSafeAreaInsets();
   const geo = useGeoLocation();
   const { photos, removePhoto } = useGeoPhotos();
   const mapRef = useRef<MapView>(null);
@@ -105,7 +103,7 @@ export default function MapaScreen() {
         )}
 
         {photos.length === 0 && (
-          <View style={[styles.empty, { top: top + 12 }]}>
+          <View style={styles.empty}>
             <Text style={styles.emptyText}>Aún no hay fotos. Toma una en la pestaña GeoCam.</Text>
           </View>
         )}
@@ -168,6 +166,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
+    top: 16,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     padding: 12,

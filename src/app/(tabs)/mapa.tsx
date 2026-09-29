@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, FlatList, StyleSheet } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, Text, Image, Pressable, FlatList, Platform, StyleSheet } from 'react-native';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { useIsFocused } from 'expo-router';
 import { useGeoLocation } from '@/hooks/useGeoLocation';
 import { useGeoPhotos } from '@/context/GeoPhotosContext';
@@ -9,6 +9,9 @@ import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 import type { Coords, GeoPhoto } from '@/types/geo';
 
 type LocatedPhoto = GeoPhoto & { coords: Coords };
+
+// En Android el fondo de Google Maps no carga en Expo Go: se usan teselas de OpenStreetMap
+const USE_OSM = Platform.OS === 'android';
 
 const DEFAULT_REGION = {
   latitude: 4.711,
@@ -65,7 +68,15 @@ export default function MapaScreen() {
           style={StyleSheet.absoluteFill}
           initialRegion={DEFAULT_REGION}
           showsUserLocation={permission === 'granted'}
+          mapType={USE_OSM ? 'none' : 'standard'}
         >
+          {USE_OSM && (
+            <UrlTile
+              urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              shouldReplaceMapContent
+            />
+          )}
           {located.map((photo) => (
             <Marker
               key={photo.id}
@@ -75,6 +86,8 @@ export default function MapaScreen() {
             />
           ))}
         </MapView>
+
+        {USE_OSM && <Text style={styles.attribution}>© OpenStreetMap</Text>}
 
         {selected && (
           <View style={styles.card}>
@@ -139,6 +152,15 @@ export default function MapaScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#fff' },
   mapWrap: { flex: 1 },
+  attribution: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    fontSize: 10,
+    color: '#404040',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    paddingHorizontal: 4,
+  },
   card: {
     position: 'absolute',
     left: 16,

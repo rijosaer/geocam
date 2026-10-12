@@ -1,6 +1,6 @@
 # Registro de Auditoría de IA (AI-LOG)
 
-**Estudiante(s):** Nombre Apellido, Nombre Apellido
+**Estudiante(s):** Ricardo Luis Boyacá Pérez
 **Semana:** 6
 **Proyecto:** GeoCam – Taller Integrador 2
 **Herramienta:** Claude Code (Claude Opus 5.5)

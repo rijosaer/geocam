@@ -1,6 +1,6 @@
 # Registro de Auditoría de IA (AI-LOG)
 
-**Estudiante(s):** Nombre Apellido, Nombre Apellido
+**Estudiante(s):** Ricardo Luis Boyacá Pérez
 **Semana:** 7
 **Proyecto:** GeoCam persistente – Taller Integrador 2
 **Herramientas:** opencode (modelo `opencode/big-pickle`) para generar el código del trabajo para la casa;

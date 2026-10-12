@@ -128,7 +128,10 @@ npm test           # 31 pruebas de los hooks de cámara, ubicación y agitado
 - [ ] Buscar por una palabra de la nota y filtrar por álbum y "Solo favoritas": la lista se actualiza sola.
 - [ ] Mantener presionado el álbum y eliminarlo: sus fotos siguen en "Todos", sin álbum.
 - [ ] Eliminar una foto desde el detalle: desaparece de la lista, del mapa y su archivo se borra.
-- [ ] Agitar el teléfono y confirmar: se borran todas las fotos y sus archivos.
+- [ ] Agitar el teléfono en la pestaña GeoCam y confirmar: se borran todas las fotos y sus archivos.
+  En Expo Go, agitar también abre el menú de desarrollador: desactívalo en Expo Go →
+  *Settings → Developer menu gestures → Shake device* (el menú sigue disponible con una
+  pulsación larga de tres dedos). En una compilación propia ese menú no existe.
 
 ## Mapa
 

@@ -5,7 +5,7 @@ import { useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCamera } from '@/hooks/useCamera';
 import { useGeoLocation } from '@/hooks/useGeoLocation';
-import { useGeoPhotos } from '@/context/GeoPhotosContext';
+import { usePhotos } from '@/hooks/usePhotos';
 import { PermissionPrimer } from '@/components/PermissionPrimer';
 import { ShakeToClear } from '@/components/ShakeToClear';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
@@ -31,7 +31,7 @@ export default function GeoCamScreen() {
     error: cameraError,
   } = useCamera();
   const geo = useGeoLocation({ watch: isFocused });
-  const { photos, addPhoto } = useGeoPhotos();
+  const { photos, addPhoto } = usePhotos();
   const lastPhoto = photos[0] ?? null;
 
   if (permissionState === 'checking') {
@@ -56,7 +56,7 @@ export default function GeoCamScreen() {
 
   const savePhoto = async (uri: string, source: GeoPhoto['source']) => {
     const coords = await currentCoords();
-    addPhoto({ id: String(Date.now()), uri, coords, source, createdAt: Date.now() });
+    await addPhoto({ uri, coords, source });
   };
 
   const handleCapture = async () => {

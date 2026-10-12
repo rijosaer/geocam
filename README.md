@@ -52,6 +52,30 @@ limpieza del GPS y del acelerómetro al desmontar y al salir de la pestaña, la 
 (bandera `cancelled`), umbral y enfriamiento del agitado, guarda de doble toque de la cámara,
 errores expuestos como estado, re-consulta del permiso al volver de Ajustes y actualizaciones inmutables del contexto.
 
+## Mapa en Android (mapa negro)
+
+Con el SDK 57, **Expo Go en Android no dibuja las teselas de Google Maps**: el mapa sale
+completamente negro aunque se acepte todo y la app no muestre errores ([expo/expo#49323][1],
+abierto y sin resolver a 2026-09-28). En iOS no ocurre: ahí el proveedor por defecto es
+Apple Maps y funciona.
+
+Cómo lo resuelve `src/app/(tabs)/mapa.tsx`:
+
+1. `mapType="none"` oculta el fondo negro de Google (solo en Android).
+2. `<UrlTile>` pinta encima las teselas de OpenStreetMap.
+3. **`maximumNativeZ` es obligatoria.** Es la única prop que activa el descargador propio de
+   `react-native-maps` (`MapUrlTile.setMaximumNativeZ` → `customTileProviderNeeded = true`).
+   Sin ella, `MapTileProvider.getTile()` delega en el `UrlTileProvider` **de Google**, que
+   necesita la API key del SDK de Maps, devuelve `null` dentro de Expo Go y el mapa queda
+   negro otra vez. Con la prop activa, las teselas se bajan con un `HttpURLConnection`
+   normal contra `tile.openstreetmap.org`, sin depender de ninguna key.
+
+En una compilación propia (EAS / `expo run:android`) esto deja de hacer falta: basta con
+añadir `"react-native-maps"` a `plugins` en `app.json` con tu `androidGoogleMapsApiKey` y
+quitar el bloque `USE_OSM`.
+
+[1]: https://github.com/expo/expo/issues/49323
+
 ## Estados de permiso
 
 En Expo Go los permisos pertenecen a Expo Go: para repetir una prueba, quítalos en
@@ -67,6 +91,8 @@ En Expo Go los permisos pertenecen a Expo Go: para repetir una prueba, quítalos
 - [ ] Negar la ubicación: la cámara sigue funcionando, aparece el banner y la foto se guarda en "Sin ubicación".
 - [ ] Negar la cámara dos veces en Android: aparece "Abrir Ajustes"; al activarla en Ajustes y volver, se abre la cámara.
 - [ ] Importar una foto de la galería: se ve con borde ámbar y etiqueta "Galería".
+- [ ] En Android: la pestaña Mapa muestra el mapa (no negro) con las teselas de OpenStreetMap
+  y el aviso "© OpenStreetMap".
 - [ ] En Mapa: un marcador por foto con coordenadas; al tocarlo se ve la miniatura.
 - [ ] Sin permiso de ubicación, el mapa se centra en la última foto.
 - [ ] Agitar el teléfono: aparece el Alert y "Borrar todo" vacía las fotos.

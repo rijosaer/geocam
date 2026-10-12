@@ -1,12 +1,12 @@
 import { View, Text, Image, Pressable, FlatList, Linking, StyleSheet } from 'react-native';
-import { useGeoPhotos } from '@/context/GeoPhotosContext';
+import { usePhotos } from '@/hooks/usePhotos';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 import type { GeoPhoto } from '@/types/geo';
 
 // react-native-maps no funciona en web: en el navegador las fotos se listan
 // y cada una con coordenadas abre su ubicación en Google Maps
 export default function MapaWebScreen() {
-  const { photos, removePhoto } = useGeoPhotos();
+  const { photos, removePhoto } = usePhotos();
 
   const renderItem = ({ item }: { item: GeoPhoto }) => (
     <View style={styles.row}>

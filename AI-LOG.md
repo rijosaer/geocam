@@ -70,7 +70,10 @@
   - Se eliminaron los componentes, pantallas, estilos e imágenes de ejemplo de la plantilla que la app no usa.
   - Pruebas de mutación: al quitar la bandera `cancelled`, la guarda con `ref` o el enfriamiento del agitado,
     fallan 6 pruebas; con el código correcto pasan las 35.
-- **¿Qué modifiqué/corregí?:** _(pendiente: correcciones tras la validación manual en el teléfono)_
+- **¿Qué modifiqué/corregí?:** el mapa negro en Android con Expo Go. El rodeo inicial
+  (teselas de OpenStreetMap con `mapType="none"`) no funcionaba; la causa real está en el
+  descargador de teselas de `react-native-maps` y se corrige declarando `maximumNativeZ` en el
+  `<UrlTile>`. Detalle y evidencia en la sección 3.
 
 ## 3. Alucinaciones o Errores Detectados
 
@@ -88,4 +91,23 @@
   del SDK 57 ya no lo incluye.
 - Con TypeScript 6 las definiciones de Jest no se cargan solas (`types` ahora es `[]` por defecto);
   se agregó `"types": ["jest"]` al `tsconfig.json`.
-- _(pendiente: alucinaciones que aparezcan al probar en el dispositivo)_
+- **Mapa negro en Expo Go con Android (SDK 57).** Es un bug de Expo, no del taller: el SDK de
+  Maps de Google no descarga ninguna tesela dentro de Expo Go y el mapa queda completamente negro
+  sin lanzar errores ([expo/expo#49323][1], abierto y sin resolver). En iOS no pasa.
+  El primer intento de rodeo fue poner teselas de OpenStreetMap con `<UrlTile>` y `mapType="none"`,
+  y **seguía en negro**. La causa está en el código nativo de `react-native-maps`
+  (`MapTileProvider.getTile`):
+
+  ```java
+  if (!this.customMode) return this.tileProvider.getTile(x, y, zoom);
+  ```
+
+  `customMode` solo se activa desde `setMaximumNativeZ`, `setDoubleTileSize` o `setTileCachePath`,
+  y como el *delegate* de Fabric (`RNMapsUrlTileManagerDelegate`) únicamente llama al setter de
+  las props que vienen declaradas en el JS, el `defaultInt = 100` no cuenta. Sin esa prop, las
+  teselas se piden por el `UrlTileProvider` **de Google**, que exige la API key del SDK de Maps,
+  devuelve `null` dentro de Expo Go y el mapa queda negro. Al declarar `maximumNativeZ={19}`
+  se enciende el descargador propio de la librería (un `HttpURLConnection` normal) y las teselas
+  ya cargan sin necesitar ninguna key.
+
+[1]: https://github.com/expo/expo/issues/49323

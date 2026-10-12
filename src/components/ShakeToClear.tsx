@@ -1,11 +1,11 @@
 import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
-import { useGeoPhotos } from '@/context/GeoPhotosContext';
+import { usePhotos } from '@/hooks/usePhotos';
 import { useShake } from '@/hooks/useShake';
 
 // Se monta solo con la pestaña visible: al salir, useShake limpia la suscripción
 export function ShakeToClear() {
-  const { photos, clearAll } = useGeoPhotos();
+  const { photos, clearAll } = usePhotos();
   const alertOpen = useRef(false);
 
   const handleShake = useCallback(() => {

@@ -17,5 +17,8 @@ export interface GeoPhoto {
   uri: string;
   coords: Coords | null; // null si el usuario negó la ubicación
   source: 'camera' | 'gallery';
+  note: string | null;
+  favorite: boolean;
+  albumId: number | null;
   createdAt: number;
 }

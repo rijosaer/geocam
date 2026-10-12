@@ -1,6 +1,6 @@
 # Registro de Auditoría de IA (AI-LOG)
 
-**Estudiante(s):** Ricardo Luis Boyacá Pérez
+**Estudiante(s):** Ricardo Luis Boyacá Pérez, Yeirys Paola Bula Rojano
 **Semana:** 7
 **Proyecto:** GeoCam persistente – Taller Integrador 2
 **Herramientas:** opencode (modelo `opencode/big-pickle`) para generar el código del trabajo para la casa;

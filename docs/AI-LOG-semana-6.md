@@ -1,6 +1,6 @@
 # Registro de Auditoría de IA (AI-LOG)
 
-**Estudiante(s):** Ricardo Luis Boyacá Pérez
+**Estudiante(s):** Ricardo Luis Boyacá Pérez, Yeirys Paola Bula Rojano
 **Semana:** 6
 **Proyecto:** GeoCam – Taller Integrador 2
 **Herramienta:** Claude Code (Claude Opus 5.5)

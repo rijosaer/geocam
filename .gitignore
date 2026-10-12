@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# QR de Expo Go generados localmente
+qr-*.png

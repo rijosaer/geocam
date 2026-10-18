@@ -14,6 +14,8 @@ import {
 import { router } from 'expo-router';
 import { useAlbums, type AlbumItem } from '@/hooks/useAlbums';
 import { usePhotoFilters } from '@/hooks/usePhotoFilters';
+import { useSync } from '@/hooks/useSync';
+import { useAuth } from '@/context/AuthContext';
 import { SOURCE_COLOR } from '@/constants/colors';
 
 const GAP = 8;
@@ -48,6 +50,8 @@ export default function PhotosScreen() {
 
   const { albums, addAlbum, removeAlbum } = useAlbums();
   const { photos, error } = usePhotoFilters({ search, albumId, onlyFavorites });
+  const { session, signOut } = useAuth();
+  const { isSyncing, progress, summary, sync } = useSync();
 
   const thumbSize = (width - PADDING * 2 - GAP * 2) / 3;
 
@@ -78,6 +82,31 @@ export default function PhotosScreen() {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.sessionBar}>
+        <Text style={styles.sessionEmail} numberOfLines={1}>
+          {session?.user.email}
+        </Text>
+        <Pressable onPress={() => void signOut()} style={styles.signOutButton}>
+          <Text style={styles.signOutText}>Cerrar sesión</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.syncRow}>
+        <Pressable
+          onPress={() => void sync()}
+          disabled={isSyncing}
+          style={[styles.syncButton, isSyncing && styles.syncButtonBusy]}
+        >
+          <Text style={styles.syncButtonText}>
+            {isSyncing && progress !== null && progress.total > 0
+              ? `Subiendo ${progress.done} de ${progress.total}…`
+              : '☁ Sincronizar'}
+          </Text>
+        </Pressable>
+        <Text style={styles.syncHint}>Sube las fotos pendientes a tu nube privada</Text>
+      </View>
+      {summary !== null && <Text style={styles.syncSummary}>{summary}</Text>}
+
       <View style={styles.controls}>
         <TextInput
           value={search}
@@ -149,6 +178,7 @@ export default function PhotosScreen() {
               style={[styles.thumb, { borderColor: SOURCE_COLOR[item.source] }]}
             />
             {item.favorite && <Text style={styles.star}>★</Text>}
+            {item.remotePath !== null && <Text style={styles.cloudIcon}>☁</Text>}
             {item.note !== null && item.note !== '' && (
               <Text style={styles.note} numberOfLines={1}>
                 {item.note}
@@ -166,6 +196,45 @@ export default function PhotosScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#fff' },
+  sessionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: PADDING,
+    paddingTop: PADDING,
+    gap: 12,
+  },
+  sessionEmail: { flex: 1, fontSize: 13, color: '#525252' },
+  signOutButton: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#d4d4d4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  signOutText: { fontSize: 12, fontWeight: '600', color: '#525252' },
+  syncRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: PADDING,
+    paddingTop: 8,
+  },
+  syncButton: {
+    borderRadius: 10,
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  syncButtonBusy: { opacity: 0.6 },
+  syncButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  syncHint: { flex: 1, fontSize: 12, color: '#737373' },
+  syncSummary: {
+    paddingHorizontal: PADDING,
+    paddingTop: 4,
+    fontSize: 12,
+    color: '#047857',
+  },
   controls: { padding: PADDING, gap: 10, borderBottomWidth: 1, borderBottomColor: '#e5e5e5' },
   search: {
     borderWidth: 1,
@@ -220,6 +289,13 @@ const styles = StyleSheet.create({
   thumbWrap: { borderRadius: 8, overflow: 'hidden' },
   thumb: { flex: 1, borderWidth: 2 },
   star: { position: 'absolute', top: 4, right: 6, fontSize: 16, color: '#f59e0b' },
+  cloudIcon: {
+    position: 'absolute',
+    bottom: 20,
+    right: 6,
+    fontSize: 12,
+    color: '#10b981',
+  },
   note: {
     position: 'absolute',
     left: 0,

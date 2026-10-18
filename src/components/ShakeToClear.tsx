@@ -17,21 +17,28 @@ export function ShakeToClear() {
 
     Alert.alert(
       '¿Borrar todas las fotos?',
-      `Se eliminarán ${photos.length} foto(s).`,
+      `Se eliminarán ${photos.length} foto(s)${photos.some((p) => p.remotePath) ? ' y sus copias en la nube' : ''}.`,
       [
         { text: 'Cancelar', style: 'cancel', onPress: close },
         {
           text: 'Borrar todo',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             close();
-            clearAll();
+            try {
+              await clearAll();
+            } catch (e) {
+              Alert.alert(
+                'No se pudo borrar',
+                e instanceof Error ? e.message : 'Reintenta cuando tengas conexión.'
+              );
+            }
           },
         },
       ],
       { cancelable: true, onDismiss: close }
     );
-  }, [photos.length, clearAll]);
+  }, [photos, clearAll]);
 
   useShake(handleShake);
 

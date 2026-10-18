@@ -21,6 +21,16 @@ export const photos = sqliteTable('photos', {
   createdAt: integer('created_at', { mode: 'timestamp_ms' })
     .notNull()
     .$defaultFn(() => new Date()),
+  // Identidad compartida con la nube: se genera en el teléfono, desde el repositorio
+  // (no con $defaultFn: drizzle-kit generate falla si el esquema importa expo-crypto)
+  clientId: text('client_id').unique(),
+  // Última modificación hecha por el usuario (una foto está pendiente si syncedAt < updatedAt)
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).$defaultFn(() => new Date()),
+  // Ruta del archivo en el bucket y momento de la última sincronización
+  remotePath: text('remote_path'),
+  syncedAt: integer('synced_at', { mode: 'timestamp_ms' }),
+  // Dueño de la sesión a la que pertenecen los datos locales (Semana 8, C5)
+  ownerId: text('owner_id'),
 });
 
 export type Photo = typeof photos.$inferSelect;

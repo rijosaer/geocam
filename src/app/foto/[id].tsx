@@ -13,6 +13,8 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAlbums } from '@/hooks/useAlbums';
 import { usePhoto } from '@/hooks/usePhoto';
+import { useAuth } from '@/context/AuthContext';
+import { uploadPhotoById } from '@/services/cloudPhotos';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 
 interface NoteEditorProps {
@@ -45,6 +47,23 @@ export default function PhotoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { photo, loading, error, setNote, toggleFavorite, moveToAlbum, remove } = usePhoto(id);
   const { albums } = useAlbums();
+  const { session } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+  const uploadToCloud = async () => {
+    if (!session || uploading) return;
+    setUploading(true);
+    setUploadMessage(null);
+    try {
+      await uploadPhotoById(Number(id), session.user.id);
+      setUploadMessage('Foto guardada en tu nube privada.');
+    } catch (e) {
+      setUploadMessage(e instanceof Error ? e.message : 'No se pudo subir la foto');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (loading) {
     return <ActivityIndicator style={styles.centered} />;
@@ -139,6 +158,32 @@ export default function PhotoDetailScreen() {
         </View>
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Nube</Text>
+        <Text style={styles.metaText}>
+          {photo.remotePath
+            ? '☁️ Subida a tu bucket privado (geocam).'
+            : 'Todavía no se ha subido a la nube.'}
+        </Text>
+        {photo.pendingSync && photo.remotePath !== null && (
+          <Text style={styles.metaText}>Tiene cambios locales sin subir.</Text>
+        )}
+        <Pressable
+          onPress={uploadToCloud}
+          disabled={uploading}
+          style={[styles.primaryButton, uploading && styles.primaryButtonBusy]}
+        >
+          <Text style={styles.primaryButtonText}>
+            {uploading
+              ? 'Subiendo…'
+              : photo.remotePath
+                ? 'Actualizar en la nube'
+                : 'Subir a la nube'}
+          </Text>
+        </Pressable>
+        {uploadMessage !== null && <Text style={styles.uploadMessage}>{uploadMessage}</Text>}
+      </View>
+
       <Pressable onPress={confirmDelete} style={styles.deleteButton}>
         <Text style={styles.deleteButtonText}>Eliminar</Text>
       </Pressable>
@@ -175,7 +220,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
+  primaryButtonBusy: { opacity: 0.6 },
   primaryButtonText: { color: '#fff', fontWeight: '700' },
+  uploadMessage: { fontSize: 12, color: '#047857' },
   favoriteButton: {
     alignItems: 'center',
     borderWidth: 1,

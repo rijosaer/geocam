@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { photosRepo } from '@/db/repositories/photos';
 import { toGeoPhoto } from '@/hooks/usePhotos';
+import { useAuth } from '@/context/AuthContext';
 import type { GeoPhoto } from '@/types/geo';
 
 export interface PhotoFilterValues {
@@ -12,9 +13,12 @@ export interface PhotoFilterValues {
 
 // La consulta se recalcula cuando cambia cualquiera de los tres filtros
 export function usePhotoFilters({ search, albumId, onlyFavorites }: PhotoFilterValues) {
+  const { session } = useAuth();
+  const ownerId = session?.user.id ?? '';
+
   const { data: rows, error } = useLiveQuery(
-    photosRepo.filteredQuery({ search, albumId, onlyFavorites }),
-    [search, albumId, onlyFavorites]
+    photosRepo.filteredQuery({ ownerId, search, albumId, onlyFavorites }),
+    [ownerId, search, albumId, onlyFavorites]
   );
 
   const photos = useMemo<GeoPhoto[]>(() => rows.map(toGeoPhoto), [rows]);

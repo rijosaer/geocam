@@ -2,16 +2,19 @@ import { useCallback, useMemo, useState } from 'react';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { photosRepo } from '@/db/repositories/photos';
 import { deletePhoto, toGeoPhoto } from '@/hooks/usePhotos';
+import { useAuth } from '@/context/AuthContext';
 import type { GeoPhoto } from '@/types/geo';
 
 // Foto individual para la pantalla de detalle: consulta reactiva por id
 export function usePhoto(id: string | undefined) {
+  const { session } = useAuth();
+  const ownerId = session?.user.id ?? '';
   const numericId = id !== undefined ? Number(id) : NaN;
   const isValid = Number.isInteger(numericId) && numericId > 0;
 
   const { data: rows, error: queryError, updatedAt } = useLiveQuery(
-    photosRepo.byIdQuery(numericId),
-    [numericId]
+    photosRepo.byIdQuery(numericId, ownerId),
+    [numericId, ownerId]
   );
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -39,13 +42,13 @@ export function usePhoto(id: string | undefined) {
   const toggleFavorite = useCallback(async () => {
     if (!isValid) return;
     try {
-      const current = photosRepo.findById(numericId);
+      const current = photosRepo.findById(numericId, ownerId);
       await photosRepo.update(numericId, { favorite: !(current?.favorite ?? false) });
       setActionError(null);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'No se pudo actualizar la favorita');
     }
-  }, [isValid, numericId]);
+  }, [isValid, numericId, ownerId]);
 
   const moveToAlbum = useCallback(
     async (albumId: number | null) => {
@@ -62,14 +65,14 @@ export function usePhoto(id: string | undefined) {
 
   const remove = useCallback(async (): Promise<boolean> => {
     if (!isValid) return false;
-    try {
-      await deletePhoto(numericId);
-      return true;
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'No se pudo eliminar la foto');
+    const message = await deletePhoto(numericId, ownerId);
+    if (message !== null) {
+      setActionError(message);
       return false;
     }
-  }, [isValid, numericId]);
+    setActionError(null);
+    return true;
+  }, [isValid, numericId, ownerId]);
 
   const error = actionError ?? (queryError ? queryError.message : null);
 

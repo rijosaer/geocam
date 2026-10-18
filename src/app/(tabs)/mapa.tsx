@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, Pressable, FlatList, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, FlatList, StyleSheet, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useIsFocused } from 'expo-router';
 import { useGeoLocation } from '@/hooks/useGeoLocation';
@@ -73,9 +73,10 @@ export default function MapaScreen() {
     }
   }, [loaded, center]);
 
-  const handleRemove = (id: string) => {
+  const handleRemove = async (id: string) => {
     if (id === selectedId) setSelectedId(null);
-    removePhoto(id);
+    const message = await removePhoto(id);
+    if (message !== null) Alert.alert('No se pudo eliminar', message);
   };
 
   return (

@@ -1,89 +1,134 @@
 # Registro de Auditoría de IA (AI-LOG)
 
 **Estudiante(s):** Ricardo Luis Boyacá Pérez, Yeirys Paola Bula Rojano
-**Semana:** 7
-**Proyecto:** GeoCam persistente – Taller Integrador 2
-**Herramientas:** opencode (modelo `opencode/big-pickle`) para generar el código del trabajo para la casa;
-Claude Code (Claude Opus 5.5) para el taller en clase y para revisar, probar y corregir lo que generó opencode.
+**Semana:** 8
+**Proyecto:** GeoCam en la nube – Taller Integrador 2
+**Herramientas:** opencode (modelo `opencode/mimo-v2.6-flash-free`) para el taller en clase y el trabajo
+para la casa; la persona estudiante revisó, ejecutó el SQL en Supabase y probó en el teléfono.
 
-> El log de la Semana 6 está en [`docs/AI-LOG-semana-6.md`](docs/AI-LOG-semana-6.md).
+> El log de la Semana 7 está en [`docs/AI-LOG-semana-7.md`](docs/AI-LOG-semana-7.md).
 
 ## 1. Prompts Utilizados
 
-El taller en clase (reemplazar `GeoPhotosContext` por SQLite + Drizzle, pasos 2, 4 y 5 de la guía) se hizo
-con Claude Code a partir de la guía. El trabajo para la casa se dividió en dos encargos a opencode,
-que se ejecutaron tal cual (aquí se resumen; el texto completo pedía además leer los archivos existentes,
-no hacer commits y correr `tsc` y `lint` al final).
+La Semana 8 se hizo con tres encargos a la IA, escritos a partir de la guía de la semana (no se copió
+el texto de la guía como prompt: cada encargo pide piezas concretas y da las reglas del proyecto).
 
-**Encargo 1: capa de datos (C1, C2, C5)**
+**Encargo 1: autenticación y sesión segura (T1, T2)**
 
-> Actúa como desarrollador senior de React Native (Expo SDK 57, Expo Router, TypeScript estricto) con
-> Drizzle ORM sobre expo-sqlite. En esta tarea trabaja SOLO la capa de datos; no toques pantallas.
-> - C1: tabla `albums` (`id`, `name` único, `createdAt`) y en `photos` la columna
->   `albumId` con `references(() => albums.id, { onDelete: 'set null' })`, opcional.
->   Genera la migración con `npx drizzle-kit generate --name albums`.
-> - C2: después, agrega `note` (texto opcional) y `favorite` (`integer` modo boolean, por defecto `false`).
->   Genera la migración con `npx drizzle-kit generate --name note_favorite`. Las fotos existentes deben conservarse.
-> - Repositorios: `albumsRepo` (`listQuery`, `create`, `remove`) y en `photosRepo`: `findById`, `update`,
->   `filteredQuery({ search, albumId, onlyFavorites })` sin ejecutar (para `useLiveQuery`) combinando
->   con `and(...)` solo las condiciones activas, y `listUris`.
-> - C5: `src/services/photoFiles.ts` con la API NUEVA de expo-file-system (`File`, `Directory`, `Paths`).
->   PROHIBIDO usar `expo-file-system/legacy`, `FileSystem.copyAsync` o mezclar ambas APIs.
->   `addPhoto` guarda la ruta permanente; `removePhoto` y `clearAll` borran también los archivos.
-> - Reglas: nunca edites un `.sql` ni `meta/` a mano, nunca uses `drizzle-kit push`; solo los repositorios
->   conocen Drizzle.
+> Actúa como desarrollador senior de Expo SDK 57 + TypeScript estricto + Expo Router sobre el proyecto
+> GeoCam existente (lee AGENTS.md y el código de la Semana 7 antes de tocar nada; usa StyleSheet, NO
+> NativeWind, que no está en el proyecto).
+> - Instala `@supabase/supabase-js`, `expo-secure-store` y `expo-crypto` con `npx expo install`.
+> - Crea `.env.example` con `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (sin
+>   valores), `.env` con las dos llaves vacías, y agrega `.env` a `.gitignore` (la plantilla de Expo solo
+>   ignora `.env*.local`).
+> - `src/lib/secureStorage.ts`: adaptador de Supabase sobre SecureStore que parte la sesión en fragmentos
+>   de 1000 caracteres (el límite por valor es ~2048 bytes y la sesión de Supabase la supera). Prohibido
+>   AsyncStorage para la sesión.
+> - `src/lib/supabase.ts`: `createClient` con ese storage, `autoRefreshToken`, `persistSession` y
+>   `detectSessionInUrl: false`; lanza un error claro si faltan las variables; pausa el auto-refresh con
+>   `AppState`. Prohibido cualquier `sb_secret_` o service_role.
+> - `src/context/AuthContext.tsx` con `onAuthStateChange`, `signIn`, `signUp` y `signOut` que devuelven
+>   el mensaje de error para la UI.
+> - `src/app/login.tsx` con correo y contraseña, validación mínima y botones de entrar/crear cuenta.
+> - `_layout.tsx`: `Stack.Protected` con `guard={!!session}` para `(tabs)` y `foto/[id]`, y
+>   `guard={!session}` para `login`; `index.tsx` queda fuera de ambos grupos y redirige con
+>   `<Redirect href={session ? '/geocam' : '/login'} />`. Sin `router.replace` manual.
+> - Botón de cerrar sesión visible en la pestaña Fotos.
+> - Al iniciar sesión, las fotos locales sin dueño quedan del usuario actual (`claimOrphans`).
+> - Termina con `npx tsc --noEmit` y `npx expo lint` sin errores y sin hacer commits.
 
-**Encargo 2: pantallas (C3, C4)**
+**Encargo 2: backend, migración local y subida de fotos (T3, T4, T5)**
 
-> La capa de datos ya está lista; construye las pantallas sin cambiar el esquema.
-> - Hooks: `useAlbums` (con error legible si el nombre ya existe), un hook de filtros que use
->   `useLiveQuery(photosRepo.filteredQuery(filtros), [search, albumId, onlyFavorites])` y `usePhoto(id)`
->   con `setNote`, `toggleFavorite`, `moveToAlbum` y `remove` (que borre también el archivo).
-> - C4: pestaña `fotos.tsx` con buscador por nota, chip "Solo favoritas", chips de álbum, crear álbum
->   y eliminarlo con pulsación larga + confirmación; lista con miniatura, ★ y nota.
-> - C3: `src/app/foto/[id].tsx` para ver la foto, editar la nota, marcar favorita, moverla de álbum y
->   eliminarla con confirmación.
-> - Cambia el `<Slot />` del layout raíz por un `<Stack>` conservando intacta la lógica de `useMigrations`.
-> - Las pantallas NO importan nada de `drizzle-orm` ni de `@/db/...`.
+> Sobre el mismo proyecto, conecta SQLite con Supabase. SQLite sigue siendo la fuente de verdad local.
+> - `docs/sql/semana8-geocam.sql`: tabla `photos` remota (`client_id` uuid único, `storage_path`,
+>   latitud/longitud, nota, favorita, fuente, `taken_at`, `updated_at`) con RLS por dueño (`auth.uid()`),
+>   bucket privado `geocam` con carpeta por usuario y políticas de insert/select/update/delete en
+>   `storage.objects`. Agrega la tabla a la publicación `supabase_realtime`. NO incluir service_role.
+> - Esquema local: agrega a `photos` las columnas opcionales `clientId`, `updatedAt`, `remotePath` y
+>   `syncedAt`; genera la migración con `npx drizzle-kit generate --name sync_fields` (nunca edites los
+>   `.sql` ni `meta/` a mano). Después agrega `ownerId` y genera `--name owner_id`.
+> - `photosRepo`: `create` genera el `clientId` con `expo-crypto`; `update` escribe siempre
+>   `updatedAt` (editar una foto la deja pendiente de subir); `markSynced(id, path)` toca solo
+>   `remotePath` y `syncedAt`; `ensureSyncFields()` rellena las fotos de la Semana 7 una sola vez al
+>   arrancar.
+> - `src/services/cloudPhotos.ts`: `uploadPhoto` sube el archivo como `ArrayBuffer`
+>   (`fetch(uri).then(r => r.arrayBuffer())`; Blob/FormData produce 0 bytes) a `<userId>/<clientId>.jpg`
+>   y luego inserta la fila; si la fila falla, borra el archivo del bucket antes de reportar.
+> - Botón "Subir a la nube" en `foto/[id].tsx` y un ícono de nube ☁ en las miniaturas ya subidas.
+> - Termina con `tsc` y `lint` limpios, sin commits.
+
+**Encargo 3: trabajo para la casa (C1–C5)**
+
+> Convierte la subida manual en un respaldo confiable:
+> - C1: botón "Sincronizar" en Fotos con avance visible ("Subiendo 3 de 7…"); sube una por una las
+>   fotos con `syncedAt` vacío o anterior a `updatedAt`; si una falla las demás continúan y al final se
+>   informa cuántas quedaron pendientes.
+> - C2: repetir la sincronización no crea filas ni archivos repetidos: ruta fija por `clientId` con
+>   `upsert` en Storage y `upsert` por `client_id` en la tabla; si la fila falla tras subir el archivo,
+>   el archivo se borra del bucket. La subida de una foto editada reemplaza su copia remota.
+> - C3: borrado coherente: si la foto tiene `remotePath`, primero se borra la fila remota y el archivo
+>   del bucket y después lo local; sin conexión la app avisa y no borra nada a medias (ni en el borrado
+>   masivo al agitar el teléfono).
+> - C4: pestaña "Nube" que lista las fotos del usuario desde Supabase con URL firmada (bucket privado),
+>   recarga con Realtime sobre `photos` y pull-to-refresh; debe funcionar al iniciar sesión en otro
+>   teléfono.
+> - C5: todas las consultas de fotos se filtran por el `ownerId` de la sesión (columna nueva con su
+>   migración); los álbumes siguen siendo locales compartidos en el teléfono.
+> - Verifica con `tsc`, `lint` y `npm test`; ejecuta los comandos de auditoría de credenciales
+>   (`git log --all --full-history -- .env`, búsqueda de `sb_secret|service_role`); no hagas commits.
 
 ## 2. Código Generado vs. Código Modificado
 
-- **¿Qué generó la IA?:** el esquema con `albums`, `note` y `favorite`; las migraciones `0001_albums` y
-  `0002_note_favorite` (con `drizzle-kit generate`); `albumsRepo` y las funciones nuevas de `photosRepo`;
-  `services/photoFiles.ts`; los hooks `useAlbums`, `usePhotoFilters` y `usePhoto`; la pestaña Fotos y la
-  pantalla de detalle `foto/[id]`.
+- **¿Qué generó la IA?:** `lib/secureStorage.ts` y `lib/supabase.ts`; `context/AuthContext.tsx`;
+  `app/login.tsx`; el `Stack.Protected` del layout y el redirect de `index.tsx`; el SQL del taller;
+  las migraciones `0003_sync_fields` y `0004_owner_id` (con `npx drizzle-kit generate`); las columnas
+  nuevas del esquema; los métodos del repositorio (`ensureSyncFields`, `markSynced`, `listPending`,
+  `claimOrphans`); `services/cloudPhotos.ts`; los hooks `useSync` y `useCloudPhotos`; la pestaña Nube;
+  el botón de subir en el detalle; el botón Sincronizar y el ícono de nube en Fotos.
 - **¿Qué modifiqué/corregí?:**
-  - `usePhoto` cargaba **toda** la tabla de fotos con `useLiveQuery(listQuery())` y buscaba la foto con
-    `rows.find(...)` en memoria. Se agregó `photosRepo.byIdQuery(id)` y el hook ahora hace
-    `useLiveQuery(byIdQuery(id), [id])`.
-  - `usePhoto` llamaba a `usePhotos()` completo (dos consultas reactivas más) solo para reutilizar
-    `removePhoto`. Se extrajo `deletePhoto(id)` (borra registro y archivo), que comparten ambos hooks.
-  - `deletePhotoFile` lanzaba una excepción si el archivo no se podía borrar, aunque el registro ya se
-    hubiera eliminado. Ahora la captura y deja un aviso en consola.
-- **Verificación:** `npx tsc --noEmit` y `npx expo lint` sin errores; 31 pruebas de jest pasan. Las tres
-  migraciones se aplicaron sobre una base SQLite con una foto creada antes de C1/C2: la foto se conserva
-  con `note = null`, `favorite = 0` y `album_id = null`.
+  - La guía propone `$defaultFn(() => Crypto.randomUUID())` dentro del esquema, pero `drizzle-kit
+    generate` falla al analizar el esquema si importa `expo-crypto` (bug drizzle-team/drizzle-orm#4961:
+    esbuild intenta transformar `react-native`/`expo-modules-core`). El UUID se genera ahora en
+    `photosRepo.create` y en `ensureSyncFields`, y el esquema no importa módulos nativos.
+  - El SQL de la guía no incluye políticas de UPDATE. Sin ellas, re-subir una foto editada (pendiente
+    por `updatedAt > syncedAt`) falla al hacer upsert. Se agregaron las políticas "actualizar las mías"
+    y "actualizar mi carpeta", además de `alter publication supabase_realtime add table public.photos`
+    para el tiempo real de la pestaña Nube (C4).
+  - La guía escribe el login con NativeWind; GeoCam no lo usa (todo StyleSheet), así que la pantalla se
+    escribió con StyleSheet y la paleta existente de la app.
+  - `deletePhoto` ahora devuelve el mensaje de error (o `null` si salió bien): Mapa, el detalle y el
+    borrado masivo al agitar muestran un Alert si el borrado falla, en vez de ignorarlo. `clearAll`
+    también borra la nube antes que lo local.
+  - `drizzle-kit` no puede generar desde un esquema que importa módulos Expo: se documentó en el propio
+    esquema por qué el default vive en el repositorio.
+- **Verificación:** `npx tsc --noEmit` y `npx expo lint` sin errores; 31 pruebas de jest pasan; las
+  migraciones 0003 y 0004 se generaron sin editar `.sql` ni `meta/` a mano.
 
 ## 3. Alucinaciones o Errores Detectados
 
-- **`onDelete: 'set null'` no llegó a la base de datos.** El esquema lo declara, pero `drizzle-kit generate`
-  produjo `ALTER TABLE photos ADD album_id integer REFERENCES albums(id);` sin la acción `ON DELETE`
-  (SQLite agrega la columna con `ALTER TABLE` y drizzle-kit omite la acción referencial). Como el cliente
-  activa `PRAGMA foreign_keys = ON`, borrar un álbum con fotos falla. Se reprodujo aplicando las migraciones
-  en una base de prueba:
+- **Service role en la app.** El error clásico de la semana es que la IA ponga la secret key o
+  `SUPABASE_SERVICE_ROLE_KEY` en el cliente "para que funcione" (salta el RLS y deja la base abierta
+  desde cualquier APK). En el código solo vive la publishable key; la auditoría
+  `git grep -nE 'sb_secret|service_role'` no arroja resultados y `git log --all --full-history -- .env`
+  está vacío.
+- **"Desactiva RLS para que la consulta devuelva datos".** Si la consulta de la nube sale vacía sin
+  error, casi siempre faltan políticas o no hay sesión; desactivar RLS abriría la tabla a cualquiera con
+  la publishable key. El SQL completo con políticas quedó en `docs/sql/semana8-geocam.sql` para
+  ejecutarlo en el panel.
+- **Subir con Blob o FormData.** En React Native produce archivos de 0 bytes; se usa
+  `ArrayBuffer` con `fetch(uri)`, como exige la guía, y el tipo de contenido se declara explícito.
+- **`markSynced` tocando `updatedAt`.** Si marcar la sincronización escribiera también `updatedAt`, la
+  foto quedaría pendiente para siempre en un bucle infinito. El método escribe solo `remotePath` y
+  `syncedAt`.
+- **Llave que llega a GitHub.** Borrarla en un commit posterior no sirve (queda en el historial): hay
+  que rotarla en el panel. Por eso `.env` está en `.gitignore` desde el primer commit de la semana y
+  solo se versiona `.env.example`.
 
-  ```
-  DELETE directo del álbum falla: FOREIGN KEY constraint failed
-  ```
+## 4. Credenciales (auditoría C6)
 
-  No se editó la migración (la regla del curso lo prohíbe). `albumsRepo.remove` ejecuta una transacción que
-  primero pone `album_id = NULL` en las fotos del álbum y luego borra el álbum; con eso las fotos quedan
-  sin álbum y no se borran (verificado en la misma prueba).
-- **API de `expo-file-system`:** no hubo mezcla de API. El prompt lo prohibía de forma explícita porque la
-  guía lo señala como alucinación frecuente, y opencode consultó los tipos instalados
-  (`node_modules/expo-file-system/build/*.d.ts`, SDK 57) antes de escribir el servicio. Se revisó a mano:
-  solo usa `File`, `Directory` y `Paths`.
-- **`.expo/types/router.d.ts` editado a mano:** opencode regeneró a mano ese archivo para que `tsc`
-  reconociera las rutas nuevas. Es un archivo generado e ignorado por Git que Expo sobrescribe en el
-  siguiente `expo start`, así que no afecta la entrega, pero no es una práctica correcta: lo indicado es
-  correr `npx expo start` para que Expo lo regenere.
+```bash
+git log --all --full-history -- .env      # sin resultados: .env nunca entró al historial
+git grep -nE 'sb_secret|service_role'     # sin resultados en el código
+ls .env .env.example                      # .env local ignorado, .env.example versionado
+```

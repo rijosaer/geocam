@@ -1,0 +1,1 @@
+ALTER TABLE `photos` ADD `owner_id` text;

@@ -1,4 +1,4 @@
-import { View, Text, Image, Pressable, FlatList, Linking, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, FlatList, Linking, StyleSheet, Alert } from 'react-native';
 import { usePhotos } from '@/hooks/usePhotos';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 import type { GeoPhoto } from '@/types/geo';
@@ -29,7 +29,12 @@ export default function MapaWebScreen() {
           <Text style={styles.muted}>Sin ubicación</Text>
         )}
       </View>
-      <Pressable onPress={() => removePhoto(item.id)}>
+      <Pressable
+        onPress={async () => {
+          const message = await removePhoto(item.id);
+          if (message !== null) Alert.alert('No se pudo eliminar', message);
+        }}
+      >
         <Text style={styles.remove}>Eliminar</Text>
       </Pressable>
     </View>

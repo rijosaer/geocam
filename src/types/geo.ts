@@ -21,4 +21,6 @@ export interface GeoPhoto {
   favorite: boolean;
   albumId: number | null;
   createdAt: number;
+  remotePath: string | null; // ruta en el bucket, null si nunca se subió
+  pendingSync: boolean; // sin subir o editada después de la última subida
 }

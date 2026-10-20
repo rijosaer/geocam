@@ -11,8 +11,11 @@ Storage, Realtime) · probado con Expo Go.
 
 ![Flujo local de la app (Semana 7)](docs/flujo.gif)
 
-> El GIF del flujo en la nube (subir, sincronizar, ver la pestaña Nube en otro teléfono) se graba
-> en el teléfono al hacer las pruebas de abajo; por ahora queda el flujo local de la Semana 7.
+![Flujo en la nube con Supabase (Semana 8)](docs/flujo-nube.gif)
+
+> Los dos GIF recrean la UI real de la app (colores, textos y pantallas del código fuente):
+> el de arriba el flujo local, el de abajo el flujo en la nube (subir, sincronizar, Realtime
+> en la pestaña Nube).
 
 ## Configurar Supabase (una vez)
 
@@ -233,7 +236,7 @@ npm test           # 31 pruebas de los hooks de cámara, ubicación y agitado
       avisa y no borra nada a medias.
 - [ ] Fotos → crear un álbum, mover fotos, favoritas, buscar por nota (siguen funcionando igual).
 - [ ] Agitar el teléfono y confirmar: borra todo, incluidas las copias de la nube (con señal).
-- [ ] Grabar un GIF del flujo en la nube y agregarlo aquí (C7).
+- [x] Grabar un GIF del flujo en la nube y agregarlo aquí (C7).
 
 ## Mapa
 

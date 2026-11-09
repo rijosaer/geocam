@@ -3,6 +3,10 @@ import { AppState, Linking } from 'react-native';
 import * as Location from 'expo-location';
 import type { Coords, PermissionState } from '@/types/geo';
 
+// Sin señal (modo avión) una lectura puede tardar ~30 s: guardar la foto no debe esperarla
+const GPS_TIMEOUT_MS = 4000;
+const LAST_KNOWN_MAX_AGE_MS = 5 * 60 * 1000;
+
 interface Options {
   watch?: boolean;
 }
@@ -70,10 +74,18 @@ export function useGeoLocation({ watch = false }: Options = {}) {
 
   // 3. Lectura única, útil justo antes de tomar la foto
   const getCurrent = useCallback(async (): Promise<Coords | null> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      const current = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), GPS_TIMEOUT_MS);
+        }),
+      ]);
+      const loc =
+        current ??
+        (await Location.getLastKnownPositionAsync({ maxAge: LAST_KNOWN_MAX_AGE_MS }));
+      if (!loc) return null; // degradación elegante: la foto se guarda sin coordenadas
       const coords = toCoords(loc);
       setState((s) => ({ ...s, coords, error: null }));
       return coords;
@@ -81,6 +93,8 @@ export function useGeoLocation({ watch = false }: Options = {}) {
       const message = e instanceof Error ? e.message : 'No se pudo obtener la ubicación';
       setState((s) => ({ ...s, error: message }));
       return null;
+    } finally {
+      clearTimeout(timer);
     }
   }, []);
 

@@ -21,6 +21,8 @@ export default function CloudScreen() {
   const isOnline = useIsOnline();
   const feed = useCloudFeed(debouncedSearch);
   useCloudRealtime();
+  // Un refresco fallido no borra lo que ya se tenía: la lista se muestra si hay datos
+  const hasData = feed.data !== undefined;
 
   return (
     <View style={styles.screen}>
@@ -51,7 +53,7 @@ export default function CloudScreen() {
       )}
 
       {/* Estado: error, con opción de reintentar */}
-      {feed.status === 'error' && (
+      {feed.status === 'error' && !hasData && (
         <View style={styles.center}>
           <Text style={styles.error}>{feed.error.message}</Text>
           <Pressable onPress={() => void feed.refetch()} style={styles.retry}>
@@ -60,7 +62,14 @@ export default function CloudScreen() {
         </View>
       )}
 
-      {feed.status === 'success' && (
+      {/* Con red, pero el último refresco falló: se avisa sin quitar la lista */}
+      {feed.status === 'error' && hasData && isOnline && (
+        <Pressable onPress={() => void feed.refetch()}>
+          <Text style={styles.stale}>No se pudo actualizar. Toca para reintentar.</Text>
+        </Pressable>
+      )}
+
+      {hasData && (
         <FlatList
           data={feed.photos}
           keyExtractor={(item) => item.clientId}
@@ -125,6 +134,13 @@ const styles = StyleSheet.create({
   offline: {
     backgroundColor: '#fef3c7',
     color: '#92400e',
+    fontSize: 13,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  stale: {
+    backgroundColor: '#fee2e2',
+    color: '#991b1b',
     fontSize: 13,
     paddingHorizontal: 12,
     paddingVertical: 8,

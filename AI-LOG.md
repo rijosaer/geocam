@@ -49,10 +49,32 @@ la pareja revisa, ejecuta el SQL en Supabase y prueba con dos teléfonos.
   - Para comprobar que las pruebas detectan errores, se introdujeron a propósito dos de los
     errores de IA que lista la guía y luego se revirtieron. "Subir antes de bajar" hizo fallar 4
     pruebas; `syncedAt = new Date()` hizo fallar 2.
-  - Falta la prueba con dos teléfonos físicos (columna "Teléfonos" de la matriz en el README).
+  - La app se probó en el emulador de Android (Expo Go, SDK 57) contra un Supabase local en Docker
+    con los SQL del repositorio. El "teléfono B" fue un script con `supabase-js` y la misma cuenta.
+    Los resultados están en la columna "Emulador" de la matriz del README. Esa prueba encontró los
+    tres primeros errores de la sección 3, que la simulación no podía ver.
+  - No se probaron: el corte de red a mitad de un ciclo en el emulador (sí en simulación), el mapa
+    con marcadores, y dos teléfonos físicos contra el proyecto real de Supabase, que está pausado.
 
 ## 3. Alucinaciones o Errores Detectados
 
+- **Se subía el texto "File not found" como si fuera la foto.** La subida usaba
+  `fetch(photo.uri).then((res) => res.arrayBuffer())`, igual que el código de apoyo de la guía y que
+  la Semana 8. En Expo Go la ruta lleva caracteres codificados dos veces
+  (`.../ExperienceData/%2540anonymous%252Fgeocam-.../photos/...jpg`). `fetch` no encontraba el
+  archivo y devolvía ese texto como cuerpo, sin lanzar error. El bucket quedó con objetos de 14 bytes
+  y la app decía "Al día". Se detectó porque el tamaño en `storage.objects` no tenía sentido. Ahora
+  se lee con `new File(uri).arrayBuffer()` de `expo-file-system`, que además falla con un error claro
+  si el archivo no existe. Las fotos subidas desde Expo Go en la Semana 8 pueden tener este mismo
+  problema; hay que revisarlo cuando se reactive el proyecto.
+- **En modo avión guardar una foto tardaba unos 30 segundos.** `getCurrentPositionAsync` con
+  precisión `Balanced` depende de la red y esperaba hasta agotar su tiempo, sin ninguna señal en
+  pantalla, y al final mostraba un error rojo. Ahora espera máximo 4 segundos, usa la última
+  ubicación conocida si la hay y, si no, guarda la foto sin coordenadas.
+- **La caché persistente se perdía tras un refresco fallido (C3).** La IA guardaba solo las consultas
+  con `status === 'success'`. Si un refresco fallaba, el feed pasaba a `error` y se descartaba con
+  todo y sus datos, justo cuando la señal es mala. Ahora se guarda toda consulta que tenga datos, y
+  la pantalla muestra la lista siempre que los haya.
 - **Hueco en el diseño de partida (borrar y editar en paralelo).** Con "gana el último cambio",
   puede pasar esto: B borra una foto (su ciclo elimina el archivo del bucket) y A, sin conexión,
   la edita después. Gana la edición de A, pero A ya tenía `remotePath`, así que no volvía a subir

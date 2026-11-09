@@ -1,4 +1,5 @@
 // Única capa que conoce Supabase para las fotos (igual que los repositorios con SQLite).
+import { File } from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 
 export const BUCKET = 'geocam';
@@ -65,8 +66,11 @@ export async function fetchChangesSince(since: string, limit = 200): Promise<Rem
 
 /** Sube el archivo. "Ya existe" no es error: un intento anterior lo subió sin guardar la fila. */
 export async function uploadPhotoFile(path: string, localUri: string): Promise<void> {
-  // En React Native un Blob o FormData produce 0 bytes: se sube como ArrayBuffer
-  const arrayBuffer = await fetch(localUri).then((res) => res.arrayBuffer());
+  // Se lee con la API de archivos y no con fetch(file://): si fetch no encuentra el archivo
+  // devuelve el texto "File not found" como contenido y se subiría eso como si fuera la foto
+  const file = new File(localUri);
+  if (!file.exists) throw new Error('El archivo de la foto ya no existe en este teléfono');
+  const arrayBuffer = await file.arrayBuffer();
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, arrayBuffer, { contentType: 'image/jpeg' });

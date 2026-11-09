@@ -9,9 +9,10 @@ conexión.
 Expo SDK 57 · Expo Router · TypeScript estricto · Drizzle ORM 0.45 · Supabase (Auth, PostgreSQL,
 Storage, Realtime) · TanStack Query 5 · expo-network.
 
-> **GIF de la prueba sin conexión (C7):** pendiente de grabar con el teléfono. Va en
-> `docs/prueba-sin-conexion.gif`: modo avión → tomar fotos → "N pendientes" → quitar modo avión →
-> "Al día".
+![Prueba sin conexión: modo avión, dos fotos, "2 pendientes", se quita el modo avión y pasa a "Al día"](docs/prueba-sin-conexion.gif)
+
+> Grabación real en el emulador de Android con un Supabase local, acelerada 1,5×. Las miniaturas
+> negras son de la cámara virtual del emulador, que captura en negro.
 
 > Entregas anteriores: [Semana 8](docs/README-semana-8.md) (Supabase) · los AI-LOG de las semanas
 > 6, 7 y 8 están en [`docs/`](docs/).
@@ -177,20 +178,27 @@ docs/sql/semana9-geocam.sql T1 + C1 para el panel de Supabase
 
 ## Matriz de pruebas (C6)
 
-La columna **Simulación** es el resultado real de `npm test`. El archivo
-[`src/__tests__/sync.test.ts`](src/__tests__/sync.test.ts) ejecuta el `services/sync.ts` real
-contra dos teléfonos y una nube simulados en memoria. La columna **Teléfonos** se llena al probar
-con dos dispositivos físicos.
+La matriz se ejecutó de dos formas, y cada columna dice lo que realmente se observó:
 
-| # | Escenario | Resultado esperado | Simulación | Teléfonos |
+- **Simulación:** resultado de `npm test`. El archivo
+  [`src/__tests__/sync.test.ts`](src/__tests__/sync.test.ts) ejecuta el `services/sync.ts` real
+  contra dos teléfonos y una nube simulados en memoria.
+- **Emulador:** la app real en Expo Go (Android 15) contra un Supabase local en Docker con los SQL
+  de este repositorio. Hay un solo emulador, así que el "teléfono B" es un script con `supabase-js`
+  que entra con la misma cuenta y hace las mismas escrituras. Los resultados se comprobaron en la
+  pantalla y consultando la base y el bucket.
+
+Falta repetirla con dos teléfonos físicos contra el proyecto real de Supabase.
+
+| # | Escenario | Resultado esperado | Simulación | Emulador |
 | --- | --- | --- | --- | --- |
-| 1 | Foto tomada sin conexión; luego se reconecta | Se sube sola; pendientes vuelve a 0 | ✅ Sin red el ciclo falla y queda 1 pendiente; al reconectar sube fila y archivo, 0 pendientes | Por probar |
-| 2 | Foto creada en el teléfono A | Aparece en B con imagen y ubicación | ✅ B la descarga a `photos/<clientId>.jpg` con lat/lng y nace sincronizada | Por probar |
-| 3 | Nota editada en A y después en B, ambos sin conexión | En los dos queda la nota de B | ✅ Queda la de B en A, en B y en la nube, en los dos órdenes de reconexión | Por probar |
-| 4 | Foto borrada en A | Desaparece en B y del bucket | ✅ La UI de A la oculta al instante; la fila remota queda con `deleted_at`, el archivo sale del bucket y B la borra con su archivo | Por probar |
-| 5 | Foto editada en A y borrada después en B, ambos sin conexión | Queda borrada en los dos | ✅ Borrada en A, B, la nube y el bucket, en los dos órdenes. Caso inverso (editada después del borrado): gana la edición y el archivo se vuelve a subir | Por probar |
-| 6 | Se corta la red a mitad de una sincronización de 5 fotos | Al reconectar termina sin duplicar filas ni archivos | ✅ Suben 2, fallan 3 y quedan pendientes; al reconectar (y repetir) quedan 5 filas y 5 archivos | Por probar |
-| 7 | Se cierra la app con fotos pendientes y se abre con red | Se sincroniza al abrir | No aplica: lo hace TanStack Query al montar `useSync` (`enabled: !!userId`) | Por probar |
+| 1 | Foto tomada sin conexión; luego se reconecta | Se sube sola; pendientes vuelve a 0 | ✅ Sin red el ciclo falla y queda 1 pendiente; al reconectar sube fila y archivo, 0 pendientes | ✅ 0 filas en modo avión; al reconectar, sin tocar nada, 2 filas y 2 archivos de ~19 KB con la nota editada, y "Al día" |
+| 2 | Foto creada en el teléfono A | Aparece en B con imagen y ubicación | ✅ B la descarga a `photos/<clientId>.jpg` con lat/lng y nace sincronizada | ✅ La foto de B llegó al volver a primer plano, con imagen, nota y coordenadas en el detalle. El mapa no se pudo revisar |
+| 3 | Nota editada en A y después en B, ambos sin conexión | En los dos queda la nota de B | ✅ Queda la de B en A, en B y en la nube, en los dos órdenes de reconexión | ✅ En los dos sentidos: con B posterior quedó la nota de B; con A posterior quedó la de A y subió a la nube |
+| 4 | Foto borrada en A | Desaparece en B y del bucket | ✅ La UI de A la oculta al instante; la fila remota queda con `deleted_at`, el archivo sale del bucket y B la borra con su archivo | ✅ Borrada en modo avión: se oculta al instante; al reconectar, `deleted_at` en la fila y 0 archivos en el bucket. El borrado hecho en B también llegó aquí |
+| 5 | Foto editada en A y borrada después en B, ambos sin conexión | Queda borrada en los dos | ✅ Borrada en A, B, la nube y el bucket, en los dos órdenes. Caso inverso (editada después del borrado): gana la edición y el archivo se vuelve a subir | ✅ Editada aquí sin conexión y borrada después en B: desapareció aquí, con `deleted_at` y sin archivo en el bucket |
+| 6 | Se corta la red a mitad de una sincronización de 5 fotos | Al reconectar termina sin duplicar filas ni archivos | ✅ Suben 2, fallan 3 y quedan pendientes; al reconectar (y repetir) quedan 5 filas y 5 archivos | No probado: el corte exacto a mitad del ciclo no se pudo provocar |
+| 7 | Se cierra la app con fotos pendientes y se abre con red | Se sincroniza al abrir | No aplica: lo hace TanStack Query al montar `useSync` (`enabled: !!userId`) | ✅ Foto en modo avión, app cerrada a la fuerza, red de vuelta y app abierta: 0 → 1 fila sin tocar nada |
 
 También se prueban:
 - **C5:** si una foto falla, las otras dos suben y el error queda guardado para la pantalla de estado.
@@ -205,13 +213,19 @@ típicos de la IA que señala la guía:
 
 Con el código correcto pasan todas.
 
+En el emulador también se comprobó:
+- **C2:** páginas de 10 con cursor (`limit=10` y luego `taken_at=lt.…`), búsqueda con una sola
+  petición, y los estados de carga, vacío, error con "Reintentar" y sin conexión.
+- **C3:** el feed guardado aparece al abrir la app en modo avión, incluso si el último refresco falló.
+- **C4:** la pantalla de estado con pendientes, fecha, subidas, bajadas y "Sincronizar ahora".
+
 ```bash
 npx tsc --noEmit   # tipos
 npx expo lint      # lint (incluye reglas del React Compiler)
 npm test           # 47 pruebas: 16 de sincronización + 31 de cámara, ubicación y agitado
 ```
 
-## Pruebas en dos teléfonos
+## Pruebas pendientes en dos teléfonos físicos
 
 - [ ] **Sin conexión:** modo avión, tomar dos fotos y editar una nota. El indicador muestra
       "Sin conexión · 3 pendientes". Quitar el modo avión: suben solas y pasa a "Al día".

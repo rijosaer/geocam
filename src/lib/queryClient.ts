@@ -59,7 +59,9 @@ export const persistOptions: Omit<PersistQueryClientOptions, 'queryClient'> = {
   persister: createAsyncStoragePersister({ storage: Storage, key: 'geocam-query-cache' }),
   maxAge: DAY,
   dehydrateOptions: {
+    // Se guarda todo lo que tenga datos, no solo status 'success': si un refresco falla
+    // con mala señal la consulta pasa a 'error', pero sus últimos datos siguen siendo válidos
     shouldDehydrateQuery: (query) =>
-      query.queryKey[0] === 'cloud' && query.state.status === 'success',
+      query.queryKey[0] === 'cloud' && query.state.data !== undefined,
   },
 };

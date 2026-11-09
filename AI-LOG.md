@@ -53,8 +53,10 @@ la pareja revisa, ejecuta el SQL en Supabase y prueba con dos teléfonos.
     con los SQL del repositorio. El "teléfono B" fue un script con `supabase-js` y la misma cuenta.
     Los resultados están en la columna "Emulador" de la matriz del README. Esa prueba encontró los
     tres primeros errores de la sección 3, que la simulación no podía ver.
-  - No se probaron: el corte de red a mitad de un ciclo en el emulador (sí en simulación), el mapa
-    con marcadores, y dos teléfonos físicos contra el proyecto real de Supabase, que está pausado.
+  - La prueba 6 se hizo con un proxy entre la app y Supabase que cortó la red al llegar el tercer
+    upsert, cuando el archivo de esa foto ya había subido y su fila no. Al reconectar quedaron 5
+    filas y 5 archivos, sin duplicados.
+  - Falta la prueba con dos teléfonos físicos contra el proyecto real de Supabase, que está pausado.
 
 ## 3. Alucinaciones o Errores Detectados
 

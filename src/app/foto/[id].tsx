@@ -13,8 +13,6 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAlbums } from '@/hooks/useAlbums';
 import { usePhoto } from '@/hooks/usePhoto';
-import { useAuth } from '@/context/AuthContext';
-import { uploadPhotoById } from '@/services/cloudPhotos';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 
 interface NoteEditorProps {
@@ -47,24 +45,6 @@ export default function PhotoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { photo, loading, error, setNote, toggleFavorite, moveToAlbum, remove } = usePhoto(id);
   const { albums } = useAlbums();
-  const { session } = useAuth();
-  const [uploading, setUploading] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
-
-  const uploadToCloud = async () => {
-    if (!session || uploading) return;
-    setUploading(true);
-    setUploadMessage(null);
-    try {
-      await uploadPhotoById(Number(id), session.user.id);
-      setUploadMessage('Foto guardada en tu nube privada.');
-    } catch (e) {
-      setUploadMessage(e instanceof Error ? e.message : 'No se pudo subir la foto');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   if (loading) {
     return <ActivityIndicator style={styles.centered} />;
   }
@@ -79,7 +59,7 @@ export default function PhotoDetailScreen() {
   }
 
   const confirmDelete = () => {
-    Alert.alert('Eliminar foto', '¿Eliminar esta foto? Esta acción no se puede deshacer.', [
+    Alert.alert('Eliminar foto', '¿Eliminar esta foto? También se borrará de la nube y de tus otros teléfonos.', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Eliminar',
@@ -162,26 +142,14 @@ export default function PhotoDetailScreen() {
         <Text style={styles.sectionTitle}>Nube</Text>
         <Text style={styles.metaText}>
           {photo.remotePath
-            ? '☁️ Subida a tu bucket privado (geocam).'
+            ? '☁️ Guardada en tu nube privada (bucket geocam).'
             : 'Todavía no se ha subido a la nube.'}
         </Text>
-        {photo.pendingSync && photo.remotePath !== null && (
-          <Text style={styles.metaText}>Tiene cambios locales sin subir.</Text>
-        )}
-        <Pressable
-          onPress={uploadToCloud}
-          disabled={uploading}
-          style={[styles.primaryButton, uploading && styles.primaryButtonBusy]}
-        >
-          <Text style={styles.primaryButtonText}>
-            {uploading
-              ? 'Subiendo…'
-              : photo.remotePath
-                ? 'Actualizar en la nube'
-                : 'Subir a la nube'}
+        {photo.pendingSync && (
+          <Text style={styles.metaText}>
+            Tiene cambios sin subir: se sincroniza solo cuando hay conexión.
           </Text>
-        </Pressable>
-        {uploadMessage !== null && <Text style={styles.uploadMessage}>{uploadMessage}</Text>}
+        )}
       </View>
 
       <Pressable onPress={confirmDelete} style={styles.deleteButton}>
@@ -220,9 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  primaryButtonBusy: { opacity: 0.6 },
   primaryButtonText: { color: '#fff', fontWeight: '700' },
-  uploadMessage: { fontSize: 12, color: '#047857' },
   favoriteButton: {
     alignItems: 'center',
     borderWidth: 1,

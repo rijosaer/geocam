@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { photosRepo } from '@/db/repositories/photos';
+import { queryClient } from '@/lib/queryClient';
 
 interface AuthValue {
   session: Session | null;
@@ -48,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     signOut: async () => {
       await supabase.auth.signOut();
+      // La caché (y su copia persistida) no debe quedar a la vista de la siguiente cuenta
+      queryClient.clear();
     },
   };
 

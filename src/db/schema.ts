@@ -31,6 +31,15 @@ export const photos = sqliteTable('photos', {
   syncedAt: integer('synced_at', { mode: 'timestamp_ms' }),
   // Dueño de la sesión a la que pertenecen los datos locales (Semana 8, C5)
   ownerId: text('owner_id'),
+  // Borrado lógico (Semana 9, C1): la foto se marca, la marca se sincroniza y solo
+  // después se borran la fila y los archivos
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+});
+
+// Pares clave-valor de la sincronización: cursor de bajada y último resultado (Semana 9, T3)
+export const syncMeta = sqliteTable('sync_meta', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
 });
 
 export type Photo = typeof photos.$inferSelect;

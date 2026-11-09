@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { photosRepo } from '@/db/repositories/photos';
-import { deletePhotoFile, persistPhoto } from '@/services/photoFiles';
-import { deletePhotoCoherent } from '@/services/cloudPhotos';
+import { persistPhoto } from '@/services/photoFiles';
 import { useAuth } from '@/context/AuthContext';
+import { requestSync } from '@/hooks/useSync';
 import type { Photo } from '@/db/schema';
 import type { Coords, GeoPhoto } from '@/types/geo';
 
@@ -33,13 +33,12 @@ export function toGeoPhoto(row: Photo): GeoPhoto {
   };
 }
 
-// Borra la foto con coherencia entre la nube y el teléfono (C3).
-// Devuelve el mensaje de error, o null si todo salió bien.
-export async function deletePhoto(id: number, ownerId: string): Promise<string | null> {
-  const photo = photosRepo.findById(id, ownerId);
-  if (!photo) return null;
+// Borrar = marcar (C1): funciona sin conexión y la marca llega a los demás teléfonos.
+// La fila y los archivos se eliminan cuando la marca ya está en la nube.
+export async function deletePhoto(id: number): Promise<string | null> {
   try {
-    await deletePhotoCoherent(photo);
+    await photosRepo.markDeleted(id);
+    requestSync();
     return null;
   } catch (e) {
     return e instanceof Error ? e.message : 'No se pudo eliminar la foto';
@@ -73,27 +72,17 @@ export function usePhotos() {
         accuracy: coords?.accuracy ?? null,
         ownerId,
       });
+      requestSync(); // la foto nueva queda pendiente: se pide subirla
     },
     [ownerId]
   );
 
-  const removePhoto = useCallback(
-    (id: string) => deletePhoto(Number(id), ownerId),
-    [ownerId]
-  );
+  const removePhoto = useCallback((id: string) => deletePhoto(Number(id)), []);
 
-  // Borrar todo también exige la nube: sin conexión no se borra nada a medias (C3)
+  // Agitar para borrar todo: también son marcas, así que no exige conexión (C1)
   const clearAll = useCallback(async () => {
-    const rows = await photosRepo.listAll(ownerId);
-    const synced = rows.filter((row) => row.remotePath !== null);
-    for (const row of synced) {
-      await deletePhotoCoherent(row);
-    }
-    const rest = rows.filter((row) => row.remotePath === null);
-    for (const row of rest) {
-      await photosRepo.remove(row.id);
-      deletePhotoFile(row.uri);
-    }
+    await photosRepo.markAllDeleted(ownerId);
+    requestSync();
   }, [ownerId]);
 
   return { photos, photosWithLocation, addPhoto, removePhoto, clearAll, error };

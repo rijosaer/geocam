@@ -14,7 +14,7 @@ import {
 import { router } from 'expo-router';
 import { useAlbums, type AlbumItem } from '@/hooks/useAlbums';
 import { usePhotoFilters } from '@/hooks/usePhotoFilters';
-import { useSync } from '@/hooks/useSync';
+import { SyncBadge } from '@/components/SyncBadge';
 import { useAuth } from '@/context/AuthContext';
 import { SOURCE_COLOR } from '@/constants/colors';
 
@@ -51,7 +51,6 @@ export default function PhotosScreen() {
   const { albums, addAlbum, removeAlbum } = useAlbums();
   const { photos, error } = usePhotoFilters({ search, albumId, onlyFavorites });
   const { session, signOut } = useAuth();
-  const { isSyncing, progress, summary, sync } = useSync();
 
   const thumbSize = (width - PADDING * 2 - GAP * 2) / 3;
 
@@ -91,21 +90,10 @@ export default function PhotosScreen() {
         </Pressable>
       </View>
 
+      {/* Sincronización automática (Semana 9): ya no hay botón, solo el estado */}
       <View style={styles.syncRow}>
-        <Pressable
-          onPress={() => void sync()}
-          disabled={isSyncing}
-          style={[styles.syncButton, isSyncing && styles.syncButtonBusy]}
-        >
-          <Text style={styles.syncButtonText}>
-            {isSyncing && progress !== null && progress.total > 0
-              ? `Subiendo ${progress.done} de ${progress.total}…`
-              : '☁ Sincronizar'}
-          </Text>
-        </Pressable>
-        <Text style={styles.syncHint}>Sube las fotos pendientes a tu nube privada</Text>
+        <SyncBadge />
       </View>
-      {summary !== null && <Text style={styles.syncSummary}>{summary}</Text>}
 
       <View style={styles.controls}>
         <TextInput
@@ -219,21 +207,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: PADDING,
     paddingTop: 8,
-  },
-  syncButton: {
-    borderRadius: 10,
-    backgroundColor: '#10b981',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  syncButtonBusy: { opacity: 0.6 },
-  syncButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  syncHint: { flex: 1, fontSize: 12, color: '#737373' },
-  syncSummary: {
-    paddingHorizontal: PADDING,
-    paddingTop: 4,
-    fontSize: 12,
-    color: '#047857',
   },
   controls: { padding: PADDING, gap: 10, borderBottomWidth: 1, borderBottomColor: '#e5e5e5' },
   search: {

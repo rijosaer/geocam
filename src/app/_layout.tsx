@@ -5,7 +5,9 @@ import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import migrations from '@/drizzle/migrations';
 import { db } from '@/db/client';
 import { photosRepo } from '@/db/repositories/photos';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { persistOptions, queryClient, useAppFocusManager } from '@/lib/queryClient';
 
 function RootNavigator() {
   const { session, isLoading } = useAuth();
@@ -17,6 +19,10 @@ function RootNavigator() {
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="foto/[id]" options={{ headerShown: true, title: 'Foto' }} />
+        <Stack.Screen
+          name="sincronizacion"
+          options={{ headerShown: true, title: 'Sincronización' }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />
@@ -26,6 +32,7 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  useAppFocusManager(); // TanStack Query se entera de cuándo la app vuelve a primer plano
   const { success, error } = useMigrations(db, migrations);
   const [localReady, setLocalReady] = useState(false);
 
@@ -51,9 +58,12 @@ export default function RootLayout() {
     return <ActivityIndicator style={{ flex: 1 }} />;
   }
 
+  // La caché del feed de la nube se guarda y se restaura al abrir (C3)
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </PersistQueryClientProvider>
   );
 }

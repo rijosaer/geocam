@@ -1,4 +1,5 @@
 import { Directory, File, Paths } from 'expo-file-system';
+import { signedUrl } from '@/services/cloudPhotos';
 
 const PHOTOS_DIRECTORY = 'photos';
 const DEFAULT_EXTENSION = '.jpg';
@@ -19,6 +20,16 @@ export async function persistPhoto(cacheUri: string): Promise<string> {
   const destination = new File(directory, name);
   await source.copy(destination);
   return destination.uri;
+}
+
+// Foto creada en otro teléfono: se baja del bucket privado con una URL firmada.
+// El nombre es el clientId, así que repetir la descarga no crea copias.
+export async function downloadPhotoFile(storagePath: string, clientId: string): Promise<string> {
+  const destination = new File(getPhotosDirectory(), `${clientId}.jpg`);
+  if (destination.exists) return destination.uri;
+  const url = await signedUrl(storagePath);
+  const file = await File.downloadFileAsync(url, destination);
+  return file.uri;
 }
 
 // El registro ya se borró: un archivo que no se puede eliminar no debe romper la acción

@@ -3,6 +3,7 @@ import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { photosRepo } from '@/db/repositories/photos';
 import { deletePhoto, toGeoPhoto } from '@/hooks/usePhotos';
 import { useAuth } from '@/context/AuthContext';
+import { requestSync } from '@/hooks/useSync';
 import type { GeoPhoto } from '@/types/geo';
 
 // Foto individual para la pantalla de detalle: consulta reactiva por id
@@ -31,6 +32,7 @@ export function usePhoto(id: string | undefined) {
       const trimmed = note.trim();
       try {
         await photosRepo.update(numericId, { note: trimmed === '' ? null : trimmed });
+        requestSync();
         setActionError(null);
       } catch (e) {
         setActionError(e instanceof Error ? e.message : 'No se pudo guardar la nota');
@@ -44,6 +46,7 @@ export function usePhoto(id: string | undefined) {
     try {
       const current = photosRepo.findById(numericId, ownerId);
       await photosRepo.update(numericId, { favorite: !(current?.favorite ?? false) });
+      requestSync();
       setActionError(null);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'No se pudo actualizar la favorita');
@@ -65,14 +68,14 @@ export function usePhoto(id: string | undefined) {
 
   const remove = useCallback(async (): Promise<boolean> => {
     if (!isValid) return false;
-    const message = await deletePhoto(numericId, ownerId);
+    const message = await deletePhoto(numericId);
     if (message !== null) {
       setActionError(message);
       return false;
     }
     setActionError(null);
     return true;
-  }, [isValid, numericId, ownerId]);
+  }, [isValid, numericId]);
 
   const error = actionError ?? (queryError ? queryError.message : null);
 

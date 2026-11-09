@@ -6,6 +6,8 @@ import m0001 from './0001_albums.sql';
 import m0002 from './0002_note_favorite.sql';
 import m0003 from './0003_sync_fields.sql';
 import m0004 from './0004_owner_id.sql';
+import m0005 from './0005_sync_meta.sql';
+import m0006 from './0006_deleted_at.sql';
 
   export default {
     journal,
@@ -14,7 +16,9 @@ import m0004 from './0004_owner_id.sql';
 m0001,
 m0002,
 m0003,
-m0004
+m0004,
+m0005,
+m0006
     }
   }
   

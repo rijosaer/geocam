@@ -17,7 +17,7 @@ export function ShakeToClear() {
 
     Alert.alert(
       '¿Borrar todas las fotos?',
-      `Se eliminarán ${photos.length} foto(s)${photos.some((p) => p.remotePath) ? ' y sus copias en la nube' : ''}.`,
+      `Se eliminarán ${photos.length} foto(s) de este teléfono, de la nube y de tus otros teléfonos.`,
       [
         { text: 'Cancelar', style: 'cancel', onPress: close },
         {

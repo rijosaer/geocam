@@ -1,9 +1,12 @@
-import { and, desc, eq, isNotNull, isNull, like, lt, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, like, or, type SQL } from 'drizzle-orm';
 import * as Crypto from 'expo-crypto';
 import { db } from '@/db/client';
 import { photos, type NewPhoto } from '@/db/schema';
 
-type PhotoInput = Omit<NewPhoto, 'id' | 'createdAt' | 'clientId' | 'updatedAt' | 'remotePath' | 'syncedAt'> & {
+type PhotoInput = Omit<
+  NewPhoto,
+  'id' | 'createdAt' | 'clientId' | 'updatedAt' | 'remotePath' | 'syncedAt' | 'deletedAt'
+> & {
   ownerId: string;
 };
 
@@ -20,30 +23,40 @@ export interface PhotoUpdate {
   albumId: number | null;
 }
 
-// Una foto está pendiente si nunca se subió o si se editó después de la última subida
+// Lo que la nube puede cambiar de una foto que ya existe en el teléfono
+export interface RemoteChanges {
+  note: string | null;
+  favorite: boolean;
+  deletedAt: Date | null;
+  updatedAt: Date;
+  syncedAt: Date;
+}
+
+// Lo que ve la UI: fotos del usuario que no están marcadas como borradas (C1)
+const visible = (ownerId: string): SQL | undefined =>
+  and(eq(photos.ownerId, ownerId), isNull(photos.deletedAt));
+
+// Pendiente = nunca se subió o se editó (o se borró) después de la última subida.
+// Incluye las marcadas como borradas: la marca también hay que subirla.
 const pendingCondition = (ownerId: string): SQL | undefined =>
   and(
     eq(photos.ownerId, ownerId),
-    or(isNull(photos.syncedAt), isNull(photos.updatedAt), lt(photos.syncedAt, photos.updatedAt))
+    or(isNull(photos.syncedAt), isNull(photos.updatedAt), gt(photos.updatedAt, photos.syncedAt))
   );
 
 export const photosRepo = {
   listQuery(ownerId: string) {
-    return db
-      .select()
-      .from(photos)
-      .where(eq(photos.ownerId, ownerId))
-      .orderBy(desc(photos.createdAt));
+    return db.select().from(photos).where(visible(ownerId)).orderBy(desc(photos.createdAt));
   },
   withLocationQuery(ownerId: string) {
     return db
       .select()
       .from(photos)
-      .where(and(eq(photos.ownerId, ownerId), isNotNull(photos.latitude)))
+      .where(and(visible(ownerId), isNotNull(photos.latitude)))
       .orderBy(desc(photos.createdAt));
   },
   filteredQuery({ ownerId, search, albumId, onlyFavorites }: PhotoFilters) {
-    const conditions: SQL[] = [eq(photos.ownerId, ownerId)];
+    const conditions: (SQL | undefined)[] = [visible(ownerId)];
     if (search !== '') {
       conditions.push(like(photos.note, `%${search}%`));
     }
@@ -63,7 +76,7 @@ export const photosRepo = {
     return db
       .select()
       .from(photos)
-      .where(and(eq(photos.id, id), eq(photos.ownerId, ownerId)));
+      .where(and(eq(photos.id, id), visible(ownerId)));
   },
   findById(id: number, ownerId: string) {
     return db
@@ -71,6 +84,14 @@ export const photosRepo = {
       .from(photos)
       .where(and(eq(photos.id, id), eq(photos.ownerId, ownerId)))
       .get();
+  },
+  // Ruta local de cada foto, por clientId: la pestaña Nube muestra el archivo local
+  // cuando existe (funciona sin conexión y no gasta datos)
+  localUrisQuery(ownerId: string) {
+    return db
+      .select({ clientId: photos.clientId, uri: photos.uri })
+      .from(photos)
+      .where(visible(ownerId));
   },
   create(data: PhotoInput) {
     // El UUID se crea aquí y no en el esquema: drizzle-kit generate no puede
@@ -83,36 +104,60 @@ export const photosRepo = {
   update(id: number, data: Partial<PhotoUpdate>) {
     return db.update(photos).set({ ...data, updatedAt: new Date() }).where(eq(photos.id, id));
   },
-  // Solo remotePath y syncedAt: tocar updatedAt dejaría la foto pendiente otra vez
-  markSynced(id: number, remotePath: string) {
+  // Borrar = marcar (C1). La fila y el archivo se van cuando la marca ya está en la nube
+  markDeleted(id: number) {
+    const now = new Date();
+    return db.update(photos).set({ deletedAt: now, updatedAt: now }).where(eq(photos.id, id));
+  },
+  markAllDeleted(ownerId: string) {
+    const now = new Date();
     return db
       .update(photos)
-      .set({ remotePath, syncedAt: new Date() })
-      .where(eq(photos.id, id));
+      .set({ deletedAt: now, updatedAt: now })
+      .where(visible(ownerId));
   },
-  remove(id: number) {
+  // Borrado físico, solo después de sincronizar la marca (o si la foto nunca se subió)
+  purge(id: number) {
     return db.delete(photos).where(eq(photos.id, id));
   },
-  listAll(ownerId: string) {
-    return db.select().from(photos).where(eq(photos.ownerId, ownerId));
-  },
-  clearAll(ownerId: string) {
-    return db.delete(photos).where(eq(photos.ownerId, ownerId));
+
+  // --- Sincronización (Semana 9) ---
+
+  // Consulta sin ejecutar para el contador reactivo de pendientes
+  pendingQuery(ownerId: string) {
+    return db
+      .select({ id: photos.id })
+      .from(photos)
+      .where(pendingCondition(ownerId));
   },
   listPending(ownerId: string) {
     return db
       .select()
       .from(photos)
       .where(pendingCondition(ownerId))
-      .orderBy(photos.createdAt);
+      .orderBy(asc(photos.createdAt));
   },
-  countPending(ownerId: string) {
-    return db
-      .select({ id: photos.id })
-      .from(photos)
-      .where(pendingCondition(ownerId))
-      .all().length;
+  findByClientId(clientId: string) {
+    return db.select().from(photos).where(eq(photos.clientId, clientId)).get();
   },
+  // Foto que llegó de la nube: nace sincronizada (syncedAt = su updatedAt)
+  insertFromRemote(data: NewPhoto) {
+    return db.insert(photos).values(data);
+  },
+  // Versión más nueva de la nube. Nunca usa la hora actual: copia los relojes remotos
+  applyRemote(id: number, changes: RemoteChanges) {
+    return db.update(photos).set(changes).where(eq(photos.id, id));
+  },
+  // syncedAt = la versión (updatedAt) que se subió, no "ahora": si el usuario editó la
+  // foto mientras subía, su updatedAt es posterior y la foto sigue pendiente
+  markSynced(id: number, remotePath: string, syncedAt: Date) {
+    return db.update(photos).set({ remotePath, syncedAt }).where(eq(photos.id, id));
+  },
+  // La nube borró el archivo pero aquí se editó después: se vuelve a subir completo
+  clearRemotePath(id: number) {
+    return db.update(photos).set({ remotePath: null }).where(eq(photos.id, id));
+  },
+
   // Las fotos de antes de la Semana 8 no tienen clientId ni updatedAt:
   // se rellenan una sola vez al arrancar, después de las migraciones
   async ensureSyncFields() {

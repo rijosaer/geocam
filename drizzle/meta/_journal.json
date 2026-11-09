@@ -36,6 +36,20 @@
       "when": 1792307788611,
       "tag": "0004_owner_id",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794244672889,
+      "tag": "0005_sync_meta",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794244677640,
+      "tag": "0006_deleted_at",
+      "breakpoints": true
     }
   ]
 }

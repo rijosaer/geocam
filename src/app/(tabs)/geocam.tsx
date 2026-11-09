@@ -8,6 +8,7 @@ import { useGeoLocation } from '@/hooks/useGeoLocation';
 import { usePhotos } from '@/hooks/usePhotos';
 import { PermissionPrimer } from '@/components/PermissionPrimer';
 import { ShakeToClear } from '@/components/ShakeToClear';
+import { SyncBadge } from '@/components/SyncBadge';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
 import type { Coords, GeoPhoto } from '@/types/geo';
 
@@ -118,6 +119,16 @@ export default function GeoCamScreen() {
         </View>
       )}
 
+      {/* Estado de sincronización (T6): baja si el banner de ubicación ocupa la parte de arriba */}
+      <View
+        style={[
+          styles.syncBadge,
+          { top: top + (geo.permission !== 'granted' && geo.permission !== 'checking' ? 88 : 12) },
+        ]}
+      >
+        <SyncBadge dark />
+      </View>
+
       {error && (
         <View style={styles.error}>
           <Text style={styles.errorText}>{error}</Text>
@@ -182,6 +193,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  syncBadge: { position: 'absolute', right: 16 },
   coordsText: { fontFamily: 'monospace', fontSize: 12, color: '#6ee7b7' },
   accuracyText: { fontFamily: 'monospace', fontSize: 12, color: '#a3a3a3' },
   error: {

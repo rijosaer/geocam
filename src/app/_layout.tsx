@@ -1,3 +1,4 @@
+import '../polyfills'; // SIEMPRE la primera línea: el AI SDK necesita structuredClone y los streams de texto
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
@@ -23,6 +24,8 @@ function RootNavigator() {
           name="sincronizacion"
           options={{ headerShown: true, title: 'Sincronización' }}
         />
+        <Stack.Screen name="perfil" options={{ headerShown: true, title: 'Mi perfil del tutor' }} />
+        <Stack.Screen name="tarjetas" options={{ headerShown: true, title: 'Tarjetas de repaso' }} />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="login" />

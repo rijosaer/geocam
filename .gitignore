@@ -45,3 +45,7 @@ example
 
 # QR de Expo Go generados localmente
 qr-*.png
+
+# Supabase CLI (estado local de "supabase link")
+supabase/.temp/
+supabase/.branches/

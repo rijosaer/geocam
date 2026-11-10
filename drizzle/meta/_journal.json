@@ -50,6 +50,20 @@
       "when": 1794244677640,
       "tag": "0006_deleted_at",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794277317511,
+      "tag": "0007_ai_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794277342544,
+      "tag": "0008_tutor_chat",
+      "breakpoints": true
     }
   ]
 }

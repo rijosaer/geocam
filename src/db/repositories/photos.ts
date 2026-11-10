@@ -26,6 +26,7 @@ export interface PhotoUpdate {
 // Lo que la nube puede cambiar de una foto que ya existe en el teléfono
 export interface RemoteChanges {
   note: string | null;
+  aiDescription: string | null;
   favorite: boolean;
   deletedAt: Date | null;
   updatedAt: Date;
@@ -103,6 +104,11 @@ export const photosRepo = {
   // Toda edición del usuario deja la foto pendiente de subir de nuevo
   update(id: number, data: Partial<PhotoUpdate>) {
     return db.update(photos).set({ ...data, updatedAt: new Date() }).where(eq(photos.id, id));
+  },
+  // Descripción de la IA (Semana 10, T5): también cambia updatedAt; sin eso la foto no
+  // queda pendiente y la descripción nunca se sube
+  setDescription(id: number, aiDescription: string | null) {
+    return db.update(photos).set({ aiDescription, updatedAt: new Date() }).where(eq(photos.id, id));
   },
   // Borrar = marcar (C1). La fila y el archivo se van cuando la marca ya está en la nube
   markDeleted(id: number) {

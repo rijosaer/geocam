@@ -167,10 +167,18 @@ export default function PhotosScreen() {
             />
             {item.favorite && <Text style={styles.star}>★</Text>}
             {item.remotePath !== null && <Text style={styles.cloudIcon}>☁</Text>}
-            {item.note !== null && item.note !== '' && (
+            {item.note !== null && item.note !== '' ? (
               <Text style={styles.note} numberOfLines={1}>
                 {item.note}
               </Text>
+            ) : (
+              // Sin nota: las primeras palabras de la descripción de la IA (Semana 10)
+              item.aiDescription !== null &&
+              item.aiDescription !== '' && (
+                <Text style={styles.note} numberOfLines={1}>
+                  ✨ {item.aiDescription}
+                </Text>
+              )
             )}
           </Pressable>
         )}

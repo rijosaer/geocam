@@ -8,6 +8,8 @@ import m0003 from './0003_sync_fields.sql';
 import m0004 from './0004_owner_id.sql';
 import m0005 from './0005_sync_meta.sql';
 import m0006 from './0006_deleted_at.sql';
+import m0007 from './0007_ai_description.sql';
+import m0008 from './0008_tutor_chat.sql';
 
   export default {
     journal,
@@ -18,7 +20,9 @@ m0002,
 m0003,
 m0004,
 m0005,
-m0006
+m0006,
+m0007,
+m0008
     }
   }
   

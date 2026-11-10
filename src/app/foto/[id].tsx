@@ -14,6 +14,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useAlbums } from '@/hooks/useAlbums';
 import { usePhoto } from '@/hooks/usePhoto';
 import { SOURCE_COLOR, SOURCE_LABEL } from '@/constants/colors';
+import { AiDescription } from '@/components/AiDescription';
 
 interface NoteEditorProps {
   initial: string;
@@ -43,7 +44,8 @@ function NoteEditor({ initial, onSave }: NoteEditorProps) {
 
 export default function PhotoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { photo, loading, error, setNote, toggleFavorite, moveToAlbum, remove } = usePhoto(id);
+  const { photo, loading, error, setNote, setDescription, toggleFavorite, moveToAlbum, remove } =
+    usePhoto(id);
   const { albums } = useAlbums();
   if (loading) {
     return <ActivityIndicator style={styles.centered} />;
@@ -96,6 +98,16 @@ export default function PhotoDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Nota</Text>
         <NoteEditor key={photo.id} initial={photo.note ?? ''} onSave={setNote} />
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Descripción con IA</Text>
+        <AiDescription
+          key={photo.id}
+          uri={photo.uri}
+          initial={photo.aiDescription ?? ''}
+          onSave={setDescription}
+        />
       </View>
 
       <View style={styles.section}>

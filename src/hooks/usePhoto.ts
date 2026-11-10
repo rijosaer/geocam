@@ -41,6 +41,24 @@ export function usePhoto(id: string | undefined) {
     [isValid, numericId]
   );
 
+  // T5: guardar la descripción cambia updatedAt (repositorio), así la foto queda pendiente y sube
+  const setDescription = useCallback(
+    async (text: string): Promise<boolean> => {
+      if (!isValid) return false;
+      const trimmed = text.trim();
+      try {
+        await photosRepo.setDescription(numericId, trimmed === '' ? null : trimmed);
+        requestSync();
+        setActionError(null);
+        return true;
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : 'No se pudo guardar la descripción');
+        return false;
+      }
+    },
+    [isValid, numericId]
+  );
+
   const toggleFavorite = useCallback(async () => {
     if (!isValid) return;
     try {
@@ -79,5 +97,5 @@ export function usePhoto(id: string | undefined) {
 
   const error = actionError ?? (queryError ? queryError.message : null);
 
-  return { photo, loading, error, setNote, toggleFavorite, moveToAlbum, remove };
+  return { photo, loading, error, setNote, setDescription, toggleFavorite, moveToAlbum, remove };
 }

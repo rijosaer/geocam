@@ -12,6 +12,7 @@ interface FakePhoto {
   accuracy: number | null;
   source: Source;
   note: string | null;
+  aiDescription: string | null;
   favorite: boolean;
   albumId: number | null;
   createdAt: Date;
@@ -37,6 +38,7 @@ interface RemoteRow {
   latitude: number | null;
   longitude: number | null;
   note: string | null;
+  ai_description: string | null;
   favorite: boolean;
   source: Source;
   taken_at: string;
@@ -168,6 +170,7 @@ function takePhoto(phone: FakePhone, at: Date, extra: Partial<FakePhoto> = {}) {
     accuracy: 5,
     source: 'camera',
     note: null,
+    aiDescription: null,
     favorite: false,
     albumId: null,
     createdAt: at,
@@ -188,6 +191,11 @@ const find = (phone: FakePhone, clientId: string) =>
 
 function editNote(phone: FakePhone, clientId: string, note: string, at: Date) {
   Object.assign(find(phone, clientId)!, { note, updatedAt: at });
+}
+
+// Igual que photosRepo.setDescription: guardar la descripción también cambia updatedAt
+function setDescription(phone: FakePhone, clientId: string, text: string, at: Date) {
+  Object.assign(find(phone, clientId)!, { aiDescription: text, updatedAt: at });
 }
 
 function markDeleted(phone: FakePhone, clientId: string, at: Date) {
@@ -390,5 +398,41 @@ describe('matriz de pruebas C6', () => {
     await sync(A);
     expect(find(A, id)).toBeUndefined();
     expect(mockCloud.rows.has(id)).toBe(false);
+  });
+});
+
+describe('Semana 10: descripción de la IA (T5 y T6)', () => {
+  it('guardar la descripción deja la foto pendiente, sube y baja en el otro teléfono', async () => {
+    const id = takePhoto(A, t(1));
+    await sync(A);
+    await sync(B);
+
+    setDescription(A, id, 'Un perro café sentado en la playa.', t(3));
+    expect(pendingCount(A)).toBe(1);
+    await sync(A);
+    expect(pendingCount(A)).toBe(0);
+    expect(mockCloud.rows.get(id)?.ai_description).toBe('Un perro café sentado en la playa.');
+
+    await sync(B);
+    expect(find(B, id)?.aiDescription).toBe('Un perro café sentado en la playa.');
+    expect(pendingCount(B)).toBe(0);
+  });
+
+  it('una foto nueva baja con su descripción', async () => {
+    const id = takePhoto(A, t(1), { aiDescription: 'Fachada de la universidad.' });
+    await sync(A);
+    await sync(B);
+    expect(find(B, id)?.aiDescription).toBe('Fachada de la universidad.');
+  });
+
+  it('la descripción editada sin red se sube al reconectar', async () => {
+    const id = takePhoto(A, t(1));
+    await sync(A);
+    mockCloud.online = false;
+    setDescription(A, id, 'Corregida a mano: es un gato, no un perro.', t(4));
+    await expect(sync(A)).rejects.toThrow('Network request failed');
+    mockCloud.online = true;
+    await sync(A);
+    expect(mockCloud.rows.get(id)?.ai_description).toBe('Corregida a mano: es un gato, no un perro.');
   });
 });

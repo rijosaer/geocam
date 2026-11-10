@@ -25,6 +25,7 @@ export function toGeoPhoto(row: Photo): GeoPhoto {
         : null,
     source: row.source,
     note: row.note,
+    aiDescription: row.aiDescription,
     favorite: row.favorite,
     albumId: row.albumId,
     createdAt: row.createdAt.getTime(),

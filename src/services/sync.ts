@@ -60,6 +60,7 @@ async function pull(userId: string): Promise<number> {
           latitude: remote.latitude,
           longitude: remote.longitude,
           note: remote.note,
+          aiDescription: remote.ai_description,
           favorite: remote.favorite,
           source: remote.source,
           createdAt: new Date(remote.taken_at),
@@ -78,6 +79,7 @@ async function pull(userId: string): Promise<number> {
         // La versión de la nube es más nueva: se aplica con sus relojes, nunca con "ahora"
         await photosRepo.applyRemote(local.id, {
           note: remote.note,
+          aiDescription: remote.ai_description,
           favorite: remote.favorite,
           deletedAt: null,
           updatedAt: remoteUpdatedAt,
@@ -105,6 +107,7 @@ function toRemoteRow(photo: Photo, path: string, updatedAt: Date): RemotePhotoUp
     latitude: photo.latitude,
     longitude: photo.longitude,
     note: photo.note,
+    ai_description: photo.aiDescription,
     favorite: photo.favorite,
     source: photo.source,
     taken_at: photo.createdAt.toISOString(),

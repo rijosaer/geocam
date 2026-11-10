@@ -18,6 +18,7 @@ export interface GeoPhoto {
   coords: Coords | null; // null si el usuario negó la ubicación
   source: 'camera' | 'gallery';
   note: string | null;
+  aiDescription: string | null; // sugerencia de la IA, editable (Semana 10)
   favorite: boolean;
   albumId: number | null;
   createdAt: number;

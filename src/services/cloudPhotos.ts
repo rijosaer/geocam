@@ -13,6 +13,7 @@ export interface RemotePhoto {
   latitude: number | null;
   longitude: number | null;
   note: string | null;
+  ai_description: string | null; // Semana 10
   favorite: boolean;
   source: 'camera' | 'gallery';
   taken_at: string;

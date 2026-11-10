@@ -27,6 +27,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="tutor"
+        options={{
+          title: 'Tutor IA',
+          tabBarIcon: ({ color }) => <Text style={{ color, fontSize: 18 }}>✨</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="nube"
         options={{
           title: 'Nube',
